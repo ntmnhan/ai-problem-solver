@@ -123,7 +123,7 @@ module.exports = async function handler(req, res) {
     for (const m of models) {
       r = await callGemini(m, key, gen, ctrl.signal);
       usedModel = m;
-      if (![404, 403, 429].includes(r.status)) break; // model không có/không được dùng/hết lượt: thử model dự phòng
+      if (![404, 403, 429, 500, 502, 503, 504].includes(r.status)) break; // model không có/quá tải/hết lượt: thử model dự phòng
     }
     if (r.status === 429) {
       return json(res, 429, { error: 'quota', message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });

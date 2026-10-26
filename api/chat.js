@@ -129,7 +129,10 @@ module.exports = async function handler(req, res) {
       return json(res, 429, { error: 'quota', message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });
     }
     if (!r.ok) {
-      return json(res, 502, { error: 'upstream', message: 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.' });
+      let detail = '';
+      try { detail = (await r.text()).slice(0, 300).replace(/AIza[\w-]+/g, '[key]'); } catch (e) { /* bỏ qua */ }
+      console.error('Gemini lỗi', r.status, usedModel, detail);
+      return json(res, 502, { error: 'upstream', status: r.status, message: 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.' });
     }
     const data = await r.json();
     const cand = data && data.candidates && data.candidates[0];

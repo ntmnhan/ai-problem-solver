@@ -15,7 +15,7 @@ async function request(path, opts = {}, timeoutMs = 35000) {
       data = null;
     }
     if (!res.ok) {
-      const err = new Error((data && data.message) || 'Có lỗi xảy ra. Em thử lại sau nhé.');
+      const err = new Error(((data && data.message) || 'Có lỗi xảy ra. Em thử lại sau nhé.') + (data && data.status ? ` (mã ${data.status})` : ''));
       err.code = (data && data.error) || 'http_' + res.status;
       err.status = res.status;
       throw err;

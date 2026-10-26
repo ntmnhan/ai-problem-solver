@@ -112,8 +112,8 @@ module.exports = async function handler(req, res) {
     }
   };
 
-  const primary = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const models = [primary, 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, a) => a.indexOf(m) === i);
+  const primary = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const models = [primary, 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, a) => a.indexOf(m) === i);
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 25000);
@@ -123,7 +123,7 @@ module.exports = async function handler(req, res) {
     for (const m of models) {
       r = await callGemini(m, key, gen, ctrl.signal);
       usedModel = m;
-      if (r.status !== 404) break; // 404 = model không còn tồn tại, thử model dự phòng
+      if (![404, 403, 429].includes(r.status)) break; // model không có/không được dùng/hết lượt: thử model dự phòng
     }
     if (r.status === 429) {
       return json(res, 429, { error: 'quota', message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });

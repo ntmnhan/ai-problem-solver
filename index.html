@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>AI Problem Solver – Trợ lý giải quyết vấn đề thực tiễn</title>
+  <meta name="description" content="AI hỗ trợ tư duy, không thay thế quyết định của học sinh. Quy trình 6 bước giúp học sinh THCS giải quyết vấn đề thực tiễn.">
+  <meta name="theme-color" content="#1d6fe0">
+  <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <script>
+    // Áp dụng nền sáng/tối trước khi vẽ giao diện để không bị nháy.
+    (function () {
+      try {
+        var t = localStorage.getItem('aips:theme');
+        if (t !== 'light' && t !== 'dark') {
+          t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#app">Bỏ qua đến nội dung</a>
+  <div id="shell">
+    <header id="header" class="site-header"></header>
+    <main id="app" tabindex="-1"><p class="loading">Đang tải…</p></main>
+    <footer id="footer" class="site-footer"></footer>
+  </div>
+  <div id="modal-root"></div>
+  <div id="toasts" aria-live="polite"></div>
+  <noscript><p style="padding:24px">Trang web cần bật JavaScript để hoạt động.</p></noscript>
+  <script src="/vendor/qrcode.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

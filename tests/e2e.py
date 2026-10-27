@@ -891,6 +891,21 @@ def run():
             ctx.close()
         record('SD-01', 'Bước 3: AI tự đọc các biện pháp, có nút Nghe, tắt được Tự đọc; có nút bật/tắt âm thanh chuyển bước', t_read_aloud_sfx)
 
+        def t_voice_no_null():
+            ctx, page = new_page(browser, init_scripts=[FAKE_SR])
+            start_anon(page)
+            new_problem(page)
+            page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('')
+            page.locator('.fld-box button').first.click()
+            expect(page.locator('.voice-state')).to_contain_text('Đã dừng', timeout=8000)
+            txt = page.locator('.voice-strip').inner_text()
+            assert 'null' not in txt and 'undefined' not in txt, txt
+            page.locator('.voice-strip').get_by_role('button', name='Nói tiếp').click()
+            expect(page.locator('.voice-state')).to_be_visible()
+            assert 'null' not in page.locator('.voice-strip').inner_text()
+            ctx.close()
+        record('VO-05', 'Thanh giọng nói không hiện chữ "null" (kể cả chỗ Nói tiếp)', t_voice_no_null)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)

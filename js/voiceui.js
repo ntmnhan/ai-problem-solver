@@ -34,7 +34,7 @@ export function voiceInput({ ta, hint = 'Em xem lại chữ, sửa nếu cần n
       : state === 'unsupported' ? 'Em vẫn gõ chữ bình thường được.'
       : state === 'error' ? 'Em kiểm tra micro và mạng Internet, mở app bằng Chrome/Safari (không mở trong Zalo, Facebook), hoặc cứ gõ chữ nhé.'
       : state === 'stopped' ? hint : '';
-    strip.append(
+    const kids = [
       h('span', { class: `voice-state ${state}` }, h('span', { class: 'dotlive' }), V_LABEL[state] || ''),
       active ? btn('Dừng nghe', { small: true, icon: 'stop', onClick: () => voice.stopListening(false) }) : null,
       active ? btn('Hủy', { small: true, icon: 'x', onClick: cancel }) : null,
@@ -42,7 +42,8 @@ export function voiceInput({ ta, hint = 'Em xem lại chữ, sửa nếu cần n
       !active && state !== 'speaking' && state !== 'unsupported' ? btn('Nói tiếp', { small: true, icon: 'mic', onClick: start }) : null,
       h('button', { type: 'button', class: 'icon-btn mini', 'aria-label': 'Quay lại nhập văn bản', title: 'Quay lại nhập văn bản', onClick: () => { voice.stopAll(); setState('idle'); ta.focus(); } }, icon('x', 16)),
       note ? h('span', { class: 'voice-note' }, note) : null
-    );
+    ];
+    strip.append(...kids.filter(Boolean)); // append(null) sẽ in chữ "null"
   }
 
   function cancel() { voice.stopListening(true); ta.value = base.trimEnd(); ta.dispatchEvent(new Event('input')); setState('stopped'); }

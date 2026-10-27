@@ -800,7 +800,7 @@ export function render(root, params) {
       lastKey = key;
       playSfx(first ? 'step' : 'page');
       voice.stopSpeaking();
-      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); }); }, 450);
+      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key && !voice.isListening()) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); }); }, 450);
     }
     clear(mainEl);
     mainEl.appendChild(pg.render());

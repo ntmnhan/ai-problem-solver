@@ -93,6 +93,7 @@ export function speak(text, onState) {
     onState && onState('error');
     return false;
   }
+  if (listening) { onState && onState('stopped'); return false; } // đang ghi âm thì không đọc, tránh tự thu tiếng loa
   stopSpeaking();
   const u = new SpeechSynthesisUtterance(String(text).slice(0, 1500));
   u.lang = 'vi-VN';

@@ -25,7 +25,7 @@ export function openVoiceSettings() {
     );
     if (!voice.supportsTTS) body.appendChild(h('p', { class: 'banner info' }, 'Trình duyệt này chưa hỗ trợ đọc to.'));
     else if (vi.length === 0) {
-      body.appendChild(h('p', { class: 'banner info', id: 'vs-none' }, 'Máy này chưa có giọng đọc tiếng Việt nên mình chưa đọc to được. Em thử mở bằng Microsoft Edge (có giọng “HoaiMy” nữ, “NamMinh” nam) hoặc thêm giọng Tiếng Việt trong Cài đặt > Ngôn ngữ của máy.'));
+      body.appendChild(h('p', { class: 'banner info', id: 'vs-none' }, 'Máy này chưa có giọng đọc tiếng Việt nên mình chưa đọc to được. Em thử mở bằng Microsoft Edge (có giọng “HoaiMy” nữ, “NamMinh” nam) hoặc thêm giọng Tiếng Việt cho máy (xem Hướng dẫn sử dụng → Nghe AI đọc).'));
     } else {
       if (!hasF || !hasM) body.appendChild(h('p', { class: 'muted small', style: 'margin:8px 0 0' }, `Máy này chỉ có giọng ${hasF ? 'nữ' : hasM ? 'nam' : 'mặc định'} tiếng Việt. Muốn có đủ nam và nữ, em dùng Microsoft Edge hoặc cài thêm giọng Tiếng Việt trong Cài đặt máy.`));
       if (vi.length > 1) {

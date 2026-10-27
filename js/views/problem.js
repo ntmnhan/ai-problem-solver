@@ -229,6 +229,7 @@ export function render(root, params) {
   function textField({ label, key, placeholder, grow = true, small = false, caption = '' }) {
     const ta = h('textarea', { placeholder: placeholder || '', 'aria-label': label, maxlength: 1500 });
     ta.value = P().data[key] || '';
+    const fitTa = autoGrow(ta, 1500); setTimeout(fitTa, 250);
     ta.addEventListener('input', () => { update((d) => { d[key] = ta.value; }); checkRisk(); });
     refs[key] = ta;
     const vi = voiceInput({ ta });
@@ -242,6 +243,7 @@ export function render(root, params) {
     const A = () => Object.assign({ pros: '', cons: '', consequences: '', feasibility: 0 }, P().data.analysis[sid] || {});
     const ta = h('textarea', { placeholder, 'aria-label': label, maxlength: 800 });
     ta.value = A()[key] || '';
+    const fitTa = autoGrow(ta, 1500); setTimeout(fitTa, 250);
     ta.addEventListener('input', () => { setA(sid, { [key]: ta.value }); checkRisk(); });
     const vi = voiceInput({ ta });
     return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, label), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
@@ -457,6 +459,7 @@ export function render(root, params) {
           ? h('div', { class: 'how' }, h('b', null, 'Cách làm'), h('p', null, t.detail))
           : (() => {
             const ta = h('textarea', { placeholder: 'Em sẽ làm như sau…', 'aria-label': 'Cách em sẽ làm việc này', maxlength: 600 });
+            autoGrow(ta, 1500);
             ta.addEventListener('input', () => { update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x.detail = ta.value; }); checkRisk(); });
             const vi = voiceInput({ ta });
             return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, 'Cách em sẽ làm việc này'), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
@@ -811,7 +814,7 @@ export function render(root, params) {
   function noViVoice() {
     if (warnedNoVoice) return;
     warnedNoVoice = true;
-    toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Em thêm giọng Tiếng Việt trong Cài đặt > Ngôn ngữ > Chuyển văn bản thành giọng nói nhé.', 'info', 9000);
+    toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Em mở bằng Microsoft Edge hoặc thêm giọng Tiếng Việt cho máy; cách làm có trong mục Hướng dẫn sử dụng (Nghe AI đọc).', 'info', 9000);
   }
   function readTools(pg) {
     const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe'));

@@ -4,12 +4,12 @@ import { downloadBackup, deleteEverything } from '../actions.js';
 import { owl, badge, STEP_ICON, STEP_COLOR } from '../art.js';
 
 const HOW = [
-  'Em kể vấn đề của mình bằng vài câu (gõ chữ hoặc bấm micro để nói).',
-  'Em cho biết nguyên nhân em nghĩ tới và kết quả em mong muốn.',
-  'Trợ lý gợi ý khoảng 3 biện pháp. Em chọn cách em thấy hợp, hoặc tự thêm cách của em.',
-  'Em xem ưu điểm, hạn chế của từng cách rồi tự quyết định chọn một cách.',
-  'Trợ lý hướng dẫn các việc cần làm theo thứ tự. Làm xong việc nào, em đánh dấu việc đó.',
-  'Em cho biết có hài lòng không (chưa hài lòng thì quay lại Bước 3), cho điểm và viết nhận xét. Em có thể nhờ thầy cô đồng hành thêm nếu em muốn.'
+  'Kể vấn đề bằng vài câu (gõ chữ hoặc bấm micro).',
+  'Nêu nguyên nhân em nghĩ tới và kết quả mong muốn.',
+  'Chọn một hay nhiều biện pháp AI gợi ý, hoặc tự thêm cách của em.',
+  'Xem ưu điểm, hạn chế rồi tự quyết định chọn cách nào.',
+  'Làm theo các việc cần làm; xong việc nào thì đánh dấu việc đó.',
+  'Nhìn lại kết quả, cho điểm, viết nhận xét; có thể gửi thầy cô nếu em muốn.'
 ];
 
 function openPoster() {
@@ -36,74 +36,67 @@ export function renderGuide(root) {
       h('section', { class: 'card' },
         h('h2', null, 'Em dùng thế nào? (6 bước)'),
         h('ol', { class: 'how' }, STEPS.map((st, i) => h('li', null, badge(STEP_ICON[i], STEP_COLOR[i], 34), h('div', null, h('strong', null, `Bước ${st.n}. ${st.name}`), h('p', null, HOW[i]))))),
-        h('p', null, 'Em là người quyết định. Trợ lý AI chỉ gợi ý; mình không tự chọn thay em và không tự đánh dấu hoàn thành thay em.')
+        h('p', null, 'Em là người quyết định. AI chỉ gợi ý, không chọn hay đánh dấu thay em.')
+      ),
+      h('section', { class: 'card', id: 'guide-voice' },
+        h('h2', null, 'Nghe AI đọc'),
+        h('ul', null,
+          h('li', null, 'AI chỉ đọc khi em bấm nút ', h('strong', null, 'Nghe'), '. Bấm nút cài đặt giọng để chọn tốc độ (Chậm/Vừa/Nhanh) và giọng nam/nữ.'),
+          h('li', null, h('strong', null, 'Không nghe được hoặc báo “chưa có giọng tiếng Việt”?'), ' App chỉ đọc bằng giọng tiếng Việt có sẵn trong máy:')),
+        h('ul', { class: 'fix' },
+          h('li', null, h('strong', null, 'Máy tính Windows (dễ nhất): '), 'mở app bằng ', h('strong', null, 'Microsoft Edge'), ' (có giọng HoaiMy nữ, NamMinh nam; cần mạng).'),
+          h('li', null, h('strong', null, 'Dùng Chrome: '), 'Settings → Time & language → Speech → Add voices → chọn Vietnamese → Add. Tắt hẳn Chrome, mở lại.'),
+          h('li', null, h('strong', null, 'iPhone: '), 'Cài đặt → Trợ năng → Nội dung đọc → Giọng nói → Tiếng Việt → tải giọng “Linh”.'),
+          h('li', null, h('strong', null, 'Android: '), 'Cài đặt → Quản lý chung → Ngôn ngữ → Chuyển văn bản thành giọng nói → cài dữ liệu tiếng Việt.'),
+          h('li', null, 'Máy chỉ có một giọng thì nút giọng còn lại sẽ mờ. Cài xong, bấm “Nghe thử” trong phần cài đặt giọng.'))
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Mẹo nhỏ'),
         h('ul', null,
-          h('li', null, 'Mỗi bước là một màn hình. Bấm “Tiếp” để sang câu kế, “Xong bước này” khi em đã hài lòng với bước đó.'),
-          h('li', null, 'Cần hỏi thêm? Bấm “Hỏi trợ lý” (từ Bước 2) để trò chuyện. Em có thể bấm micro để nói.'),
-          h('li', null, 'Em có thể quay lại sửa bước trước; các bước sau sẽ nhắc em xem lại.'),
-          h('li', null, 'Dữ liệu lưu ngay trên máy em. Nên tải bản sao lưu ở menu để không bị mất khi đổi máy.'))
+          h('li', null, 'Bấm “Tiếp” để sang câu kế, “Xong bước này” khi em hài lòng. Em có thể quay lại sửa bước trước.'),
+          h('li', null, 'Cần hỏi thêm? Bấm “Hỏi trợ lý” (từ Bước 2); có thể bấm micro để nói.'),
+          h('li', null, 'Dữ liệu lưu trên máy em. Nên tải bản sao lưu để không mất khi đổi máy.'))
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Quyền riêng tư: dữ liệu của em nằm ở đâu?'),
         h('ul', null,
-          h('li', null, 'Hồ sơ (họ tên, lớp nếu em nhập hoặc mã ẩn danh), các vấn đề, câu trả lời và hội thoại được lưu ', h('strong', null, 'ngay trên thiết bị của em'), ' (trình duyệt).'),
-          h('li', null, 'Website ', h('strong', null, 'không có tài khoản, mật khẩu'), ' và ', h('strong', null, 'không tự lưu hồ sơ của em trên máy chủ'), '.'),
-          h('li', null, 'Vì vậy chỉ em (hoặc người dùng chung thiết bị) xem được lịch sử. Không ai khác xem được chỉ bằng cách biết tên em.'),
-          h('li', null, 'Nếu xóa dữ liệu trình duyệt hoặc đổi máy, em sẽ mất lịch sử, trừ khi em đã tải bản sao lưu.'))
-      ),
-      h('section', { class: 'card' },
-        h('h2', null, 'Điều gì được gửi cho trợ lý AI?'),
-        h('ul', null,
-          h('li', null, 'Khi em gửi tin nhắn hoặc bấm nút nhờ AI gợi ý, nội dung tin nhắn gần đây và phần tóm tắt vấn đề của em được gửi qua máy chủ của website tới dịch vụ AI (Google Gemini) để tạo câu trả lời.'),
-          h('li', null, 'Máy chủ của website không lưu những nội dung này. Số điện thoại và email nếu có sẽ được tự động che trước khi gửi.'),
-          h('li', null, 'Website dùng gói miễn phí của dịch vụ AI. Theo điều khoản của gói miễn phí, nhà cung cấp có thể dùng nội dung gửi tới để cải thiện sản phẩm của họ. ', h('strong', null, 'Em đừng ghi họ tên thật, số điện thoại, địa chỉ, mật khẩu hay thông tin riêng tư của em và người khác.'))
+          h('li', null, 'Hồ sơ, vấn đề và hội thoại lưu ', h('strong', null, 'ngay trên thiết bị của em'), '. Website ', h('strong', null, 'không có tài khoản, mật khẩu'), ' và không lưu hồ sơ em trên máy chủ.'),
+          h('li', null, 'Xóa dữ liệu trình duyệt hoặc đổi máy sẽ mất lịch sử, trừ khi em đã tải bản sao lưu.'),
+          h('li', null, 'Khi em nhờ AI, nội dung gần đây được gửi qua máy chủ tới Google Gemini để tạo câu trả lời. Máy chủ website không lưu; số điện thoại, email được che. Gói miễn phí có thể được nhà cung cấp dùng để cải thiện sản phẩm, nên ', h('strong', null, 'em đừng ghi họ tên thật, số điện thoại, địa chỉ, mật khẩu hay thông tin riêng tư.'))
         )
       ),
       h('section', { class: 'card' },
-        h('h2', null, 'Gửi vấn đề cho thầy cô (tùy chọn)'),
+        h('h2', null, 'Gửi thầy cô, đếm lượt và góp ý'),
         h('ul', null,
-          h('li', null, 'Ở trang cuối của Bước 6, em có thể chọn gửi vấn đề cho thầy cô. ', h('strong', null, 'Chỉ khi em tick đồng ý và bấm “Gửi cho thầy cô”'), ' thì nội dung mới rời khỏi thiết bị của em.'),
-          h('li', null, 'Nội dung gửi gồm: vấn đề, mục tiêu, cách em chọn, kết quả, kết luận và họ tên, lớp, trường nếu em nhập (có thể bỏ trống để ẩn danh). ', h('strong', null, 'Không gửi'), ' cuộc trò chuyện với AI.'),
-          h('li', null, 'Thông tin được lưu vào bảng tính của nhà trường và chỉ thầy cô có mật khẩu quản trị mới xem được, để hỗ trợ em. Em có thể nhờ thầy cô xóa.'))
+          h('li', null, h('strong', null, 'Gửi vấn đề cho thầy cô là tùy chọn:'), ' chỉ khi em tick đồng ý và bấm “Gửi cho thầy cô” thì nội dung (vấn đề, mục tiêu, cách chọn, kết quả, tên/lớp nếu em nhập) mới được gửi. Không gửi cuộc trò chuyện với AI. Chỉ thầy cô có mật khẩu quản trị xem được; em có thể nhờ xóa.'),
+          h('li', null, h('strong', null, 'Số ca thầy cô nhận'), ' chỉ gồm các vấn đề em chủ động gửi, nên luôn ít hơn số em đã dùng.'),
+          h('li', null, h('strong', null, 'Lượt truy cập'), ' là số lần mở website (cách nhau ít nhất 30 phút trên cùng máy), không phải số người; không lưu tên hay nội dung.'),
+          h('li', null, 'Đánh giá, góp ý (số sao, lời nhắn, không kèm tên) được lưu để cải thiện website.'))
       ),
       h('section', { class: 'card' },
-        h('h2', null, 'Bộ đếm lượt truy cập, đánh giá và góp ý'),
-        h('ul', null,
-          h('li', null, h('strong', null, 'Số ca thầy cô nhận được'), ' chỉ gồm những vấn đề em chủ động gửi ở trang cuối (có tick đồng ý). Em dùng nhưng không gửi thì thầy cô không nhận được gì, nên số ca luôn ít hơn số em đã dùng.'),
-          h('li', null, h('strong', null, 'Lượt truy cập'), ' = một lần mở website trong một phiên trình duyệt, cách lần đếm trước trên cùng thiết bị ít nhất 30 phút. Chuyển bước, mở lịch sử hay xem kết quả không làm tăng số đếm. Đây là số lượt, không phải số người.'),
-          h('li', null, 'Bộ đếm chỉ lưu một con số tổng, không lưu họ tên, lớp hay nội dung của em.'),
-          h('li', null, 'Khi em gửi đánh giá hoặc góp ý, nội dung đó (số sao và lời nhắn em tự viết, không kèm tên) được lưu vào bảng tính của chủ dự án để cải thiện website.'))
-      ),
-      h('section', { class: 'card' },
-        h('h2', null, 'Em có thể làm gì với dữ liệu của mình?'),
+        h('h2', null, 'Dữ liệu của em'),
         h('div', { class: 'row' },
           btn('Tải bản sao lưu', { icon: 'download', onClick: downloadBackup }),
           btn('Xóa toàn bộ dữ liệu', { icon: 'trash', onClick: () => deleteEverything(() => { location.hash = '#/start'; }) })),
-        h('p', { class: 'muted small', style: 'margin-top:10px' }, 'Xóa dữ liệu chỉ xóa trên thiết bị này. Dữ liệu không được giữ ở đâu khác.')
+        h('p', { class: 'muted small', style: 'margin-top:10px' }, 'Xóa chỉ xóa trên thiết bị này.')
       ),
       h('section', { class: 'card' },
         h('h2', null, 'An toàn của em'),
-        h('p', null, 'Nếu em bị bạo lực, xâm hại hoặc cảm thấy không an toàn, hãy nói với ba mẹ, thầy cô hoặc người lớn em tin tưởng và gọi ', h('a', { href: 'tel:111' }, '111'), ' (Tổng đài quốc gia bảo vệ trẻ em). Nguy hiểm ngay lúc này: ', h('a', { href: 'tel:113' }, '113'), ' (Công an), ', h('a', { href: 'tel:115' }, '115'), ' (Cấp cứu).')
+        h('p', null, 'Nếu em bị bạo lực, xâm hại hoặc không an toàn, hãy nói với ba mẹ, thầy cô hoặc người lớn em tin tưởng và gọi ', h('a', { href: 'tel:111' }, '111'), ' (bảo vệ trẻ em). Nguy hiểm ngay: ', h('a', { href: 'tel:113' }, '113'), ' (Công an), ', h('a', { href: 'tel:115' }, '115'), ' (Cấp cứu).')
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Cơ sở tham khảo'),
-        h('p', { class: 'muted small' }, 'Trợ lý tư vấn dựa trên các tài liệu sau:'),
         h('ol', null,
-          h('li', null, 'Bộ Quy tắc ứng xử về bảo vệ trẻ em trên môi trường mạng (Bộ Thông tin và Truyền thông).'),
+          h('li', null, 'Bộ Quy tắc ứng xử về bảo vệ trẻ em trên môi trường mạng.'),
           h('li', null, 'Tài liệu Kỹ năng giải quyết vấn đề và ra quyết định (quy trình 6 bước).'),
-          h('li', null, 'Chương trình giáo dục phổ thông - Chương trình tổng thể (Thông tư 32/2018/TT-BGDĐT).'),
+          h('li', null, 'Chương trình giáo dục phổ thông - Chương trình tổng thể (TT 32/2018/TT-BGDĐT).'),
           h('li', null, 'UNESCO (2024), AI Competency Framework for Students.'))
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Lưu ý'),
         h('ul', null,
-          h('li', null, 'AI có thể nhầm. Em hãy tự kiểm chứng thông tin và hỏi ý kiến người lớn đáng tin cậy.'),
-          h('li', null, 'Trợ lý không thay thế thầy cô, ba mẹ hay chuyên gia, và không chẩn đoán sức khỏe tâm thần.'),
-          h('li', null, 'Giọng đọc lời chào là giọng tổng hợp Piper (mô hình vais1000, dữ liệu VAIS-1000, giấy phép CC BY 4.0).'),
-          h('li', null, 'Logo là bản dựng mới (la bàn trắng trong vòng tròn xanh dương), chưa phải tệp logo gốc.'))
+          h('li', null, 'AI có thể nhầm; em hãy tự kiểm chứng và hỏi người lớn đáng tin cậy. Trợ lý không thay thế thầy cô, ba mẹ hay chuyên gia.'),
+          h('li', null, 'Giọng lời chào: Piper (vais1000, dữ liệu VAIS-1000, CC BY 4.0). Logo là bản dựng mới, chưa phải logo gốc.'))
       ),
       h('section', { class: 'card' },
         h('p', { class: 'muted small', style: 'margin:0 0 4px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--primary)' }, CONFIG.authorsHeading),

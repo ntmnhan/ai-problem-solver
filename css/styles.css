@@ -746,3 +746,19 @@ input[type='text'], input[type='search'], textarea, select { font-size: max(16px
 .vs-seg button { flex: 1 1 auto; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line, #d5dbe6); border-radius: 10px; background: #fff; font: inherit; cursor: pointer; }
 .vs-seg button[aria-pressed="true"] { background: var(--brand, #2563eb); color: #fff; border-color: transparent; }
 .vs-seg button:disabled { opacity: .45; cursor: not-allowed; }
+
+/* v26: bỏ khóa cứng một màn hình — mọi thiết bị đều cuộn trang tự nhiên, nội dung hiện đủ */
+body.wiz { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+body.wiz #shell { height: auto; min-height: 100vh; min-height: 100dvh; }
+body.wiz main { overflow: visible; }
+.wz { flex: 1 0 auto; min-height: 0; }
+.wz-card { overflow: visible; flex: 1 0 auto; }
+.wz-main { overflow: visible; flex: 0 0 auto; }
+.wz-main > .col, .col.grow { flex: 0 0 auto; }
+.fld, .fld.grow, .fld.small.grow, .fld.small { flex: 0 0 auto; min-height: 0; }
+.fld-box { flex: 0 0 auto; }
+.fld .fld-box textarea, .fld.small .fld-box textarea { min-height: 96px; overflow: hidden; }
+.sol-list, .plan-list, .plan-ov, .how, .pick-list, .pick-list.grow { overflow: visible; max-height: none; flex: 0 0 auto; min-height: 0; }
+.bubble.long .qs { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.qh { display: block; }
+.wz-actions { position: sticky; bottom: 0; z-index: 5; background: var(--bg, #f3f7ff); padding: 6px 0 4px; }

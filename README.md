@@ -110,6 +110,12 @@ tests/              Kiểm thử + báo cáo
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
 
+## Phiên bản 26 — Bỏ khóa cứng một màn hình
+- Mọi thiết bị (điện thoại, máy tính) cuộn trang tự nhiên; ô nhập tự giãn theo nội dung nên hiện đủ các dòng; không còn khung cuộn nhỏ bên trong. Nút Quay lại/Tiếp luôn dính ở đáy màn hình. Test LY-02.
+
+## Phiên bản 25 — Hướng dẫn sử dụng gọn hơn
+- Trang Hướng dẫn rút gọn; thêm mục "Nghe AI đọc" (cách khắc phục khi máy chưa có giọng tiếng Việt: Edge, Windows, iPhone, Android). Thông báo thiếu giọng trỏ tới mục này.
+
 ## Phiên bản 24 — Chỉ đọc khi bấm Nghe; chọn tốc độ và giọng
 - Bỏ hoàn toàn tự đọc (bước 3-5, phản hồi trong khung chat, lời chào). AI chỉ nói khi bấm nút Nghe (mỗi tin nhắn của trợ lý có nút Nghe riêng).
 - Nút cài đặt giọng: tốc độ Chậm/Vừa/Nhanh, giọng Mặc định/Nữ/Nam, chọn giọng cụ thể, Nghe thử. Lưu trên máy. Giọng nam/nữ phụ thuộc giọng tiếng Việt cài sẵn trong máy (Edge có HoaiMy nữ, NamMinh nam).

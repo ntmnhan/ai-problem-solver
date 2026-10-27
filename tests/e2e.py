@@ -574,7 +574,7 @@ def run():
                     if h_ >= 800 and w < 900:
                         over = page.evaluate("(() => { const m = document.querySelector('.wz-main'); return m.scrollHeight - m.clientHeight; })()")
                         assert over <= 2, f'bước {step} bị cuộn {over}px ở {w}x{h_}'
-                    if w < 900: assert page.evaluate('document.documentElement.scrollHeight') <= h_ + 1, f'trang bị cuộn dọc ở {w}x{h_} bước {step}'
+                    # (từ v26 không còn khóa một màn hình: trang được phép cuộn dọc)
                     # khay trợ lý: nút gửi nằm trong khung nhìn, đủ lớn
                     if step == 1:
                         continue
@@ -592,7 +592,7 @@ def run():
                 no_hscroll(page)
                 assert not page.errs, page.errs
                 ctx.close()
-        record('UI-04', 'Không tràn ngang; mỗi bước vừa một màn hình (không cuộn trang); nút gửi đủ lớn ở 360/414/768/1280px', t_layouts)
+        record('UI-04', 'Không tràn ngang; nút gửi đủ lớn ở 360/414/768/1280px', t_layouts)
 
         # ---------- Xuất tệp ----------
         def t_export():
@@ -1037,6 +1037,41 @@ def run():
                 ctx.close()
         record('LY-01', 'Điện thoại 320-412px: danh sách biện pháp dài không bị chồng chữ/đè hàng ở Bước 3 và 4, nút Xong bước này luôn thấy', t_no_overlap_phone)
 
+        def t_no_fixed_screen():
+            LONGTXT = '\n'.join(f'- Ý số {i}: nội dung khá dài để kiểm tra việc hiển thị đầy đủ các dòng trong ô nhập' for i in range(1, 9))
+            for (w, h_) in [(360, 640), (390, 844), (1280, 720)]:
+                ctx, page = new_page(browser, (w, h_))
+                start_anon(page)
+                new_problem(page)
+                page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Em đang buồn vì điểm xấu')
+                confirm_step(page)
+                page.get_by_label('Nguyên nhân em nghĩ là…').fill('Em chưa hiểu bài')
+                sub(page, 2, 2)
+                page.get_by_label('Kết quả em mong muốn là…').fill('Điểm tốt hơn')
+                confirm_step(page)
+                expect(page.locator('.pick-row')).to_have_count(5)
+                page.locator('.pick-row .pick').first.click()
+                confirm_step(page)
+                ta = page.get_by_label('Ưu điểm')
+                expect(ta).to_be_visible(timeout=8000)
+                ta.fill(LONGTXT)
+                page.wait_for_timeout(300)
+                res = page.evaluate("""() => {
+                    const bad = [];
+                    document.querySelectorAll('.wz-main textarea').forEach((t, i) => { if (t.scrollHeight > t.clientHeight + 3) bad.push('ô ' + i + ' bị cắt: ' + t.scrollHeight + '>' + t.clientHeight); });
+                    const cs = getComputedStyle(document.body);
+                    if (cs.overflow === 'hidden' && document.documentElement.scrollHeight <= innerHeight) bad.push('trang bị khóa cứng');
+                    return bad;
+                }""")
+                assert not res, f'{w}x{h_}: {res}'
+                # trang cuộn được và nút điều hướng luôn trong tầm nhìn
+                page.screenshot(path=f'tests/screens/ly02-{w}.png', full_page=True)
+                page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                bb = page.locator('.wz-actions').first.bounding_box()
+                assert bb and bb['y'] + bb['height'] <= h_ + 2 and bb['y'] >= 0, f'nút điều hướng ngoài màn hình {w}x{h_}: {bb}'
+                ctx.close()
+        record('LY-02', 'Không khóa cứng một màn hình (điện thoại + máy tính): ô nhập tự giãn hiện đủ dòng, trang cuộn tự nhiên, nút điều hướng luôn thấy', t_no_fixed_screen)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)
@@ -1112,6 +1147,8 @@ def run():
             expect(page.get_by_text('không có tài khoản, mật khẩu')).to_be_visible()
             expect(page.get_by_text('gói miễn phí').first).to_be_visible()
             expect(page.get_by_text('Cơ sở tham khảo')).to_be_visible()
+            expect(page.get_by_role('heading', name='Nghe AI đọc')).to_be_visible()
+            expect(page.get_by_text('Add voices')).to_be_visible()
             expect(page.get_by_role('heading', name='Thông tin tác giả')).to_be_visible()
             expect(page.get_by_text(re.compile(r'Phiên bản \d+'))).to_have_count(1)  # chỉ hiện ở chân trang, không lặp trong trang
             expect(page.get_by_text('Học sinh Trường THCS Gò Vấp').first).to_be_visible()

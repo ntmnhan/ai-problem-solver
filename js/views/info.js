@@ -57,6 +57,7 @@ export function renderGuide(root) {
       h('section', { class: 'card' },
         h('h2', null, 'Bộ đếm lượt truy cập, đánh giá và góp ý'),
         h('ul', null,
+          h('li', null, h('strong', null, 'Số ca thầy cô nhận được'), ' chỉ gồm những vấn đề em chủ động gửi ở trang cuối (có tick đồng ý). Em dùng nhưng không gửi thì thầy cô không nhận được gì, nên số ca luôn ít hơn số em đã dùng.'),
           h('li', null, h('strong', null, 'Lượt truy cập'), ' = một lần mở website trong một phiên trình duyệt, cách lần đếm trước trên cùng thiết bị ít nhất 30 phút. Chuyển bước, mở lịch sử hay xem kết quả không làm tăng số đếm. Đây là số lượt, không phải số người.'),
           h('li', null, 'Bộ đếm chỉ lưu một con số tổng, không lưu họ tên, lớp hay nội dung của em.'),
           h('li', null, 'Khi em gửi đánh giá hoặc góp ý, nội dung đó (số sao và lời nhắn em tự viết, không kèm tên) được lưu vào bảng tính của chủ dự án để cải thiện website.'))

@@ -52,25 +52,26 @@ export function buildReportModel(p, profile, opts = {}) {
   if (rows.length) s4.push({ type: 'table', head: ['#', 'Biện pháp', 'Ưu điểm', 'Hạn chế'], rows, widths: [5, 35, 30, 30] });
   else s4.push({ type: 'p', text: '(chưa có phân tích)' });
   s4.push(qa('Phương án em đã chọn', chosen ? chosen.text : ''));
-  s4.push(qa('Lý do em chọn', d.reason));
+  if (T(d.reason)) s4.push(qa('Lý do em chọn', d.reason));
   sections.push({ heading: head(4), blocks: s4 });
 
   const plan = d.plan.filter((t) => T(t.text));
   sections.push({
     heading: head(5),
     blocks: plan.length
-      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Hướng dẫn', 'Thời gian', 'Tình trạng (em cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, t.detail || '-', t.time || '-', TASK_STATUS[t.status] || '-']), widths: [5, 25, 40, 12, 18] }]
+      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Hướng dẫn', 'Thời gian', 'Tình trạng (em cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, [t.detail || '-', t.expect ? 'Kết quả mong đợi: ' + t.expect : '', t.backup ? 'Nếu chưa được: ' + t.backup : ''].filter(Boolean).join('\n'), t.time || '-', TASK_STATUS[t.status] || '-']), widths: [5, 22, 45, 10, 18] }]
       : [{ type: 'p', text: '(chưa có kế hoạch)' }]
   });
 
-  sections.push({
-    heading: head(6),
-    blocks: [
-      qa('Em có hài lòng với cách giải quyết không?', d.happy === 'yes' ? 'Hài lòng' : d.happy === 'no' ? 'Chưa hài lòng' : ''),
-      qa('Điểm em cho (1-5)', d.satisfaction ? String(d.satisfaction) : ''),
-      qa('Nhận xét của em', d.final || [d.result, d.compare].filter(Boolean).join('\n'))
-    ]
-  });
+  const s6 = [];
+  const ach = { yes: 'Đã đạt', part: 'Đạt một phần', no: 'Chưa đạt' }[d.achieved];
+  if (ach) s6.push(qa('Em đạt được kết quả mong muốn chưa?', ach));
+  s6.push(qa('Em có hài lòng với cách giải quyết không?', d.happy === 'yes' ? 'Hài lòng' : d.happy === 'no' ? 'Chưa hài lòng' : ''));
+  s6.push(qa('Điểm em cho (1-5)', d.satisfaction ? String(d.satisfaction) : ''));
+  if (T(d.good)) s6.push(qa('Điều đã làm tốt', d.good));
+  if (T(d.better)) s6.push(qa('Điều cần làm tốt hơn', d.better));
+  if (!T(d.good) && !T(d.better)) s6.push(qa('Nhận xét của em', d.final || [d.result, d.compare].filter(Boolean).join('\n')));
+  sections.push({ heading: head(6), blocks: s6 });
 
   sections.push({ heading: 'Nhận xét của giáo viên', blocks: [{ type: 'box' }] });
 

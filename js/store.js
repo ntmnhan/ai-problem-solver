@@ -52,6 +52,9 @@ export function emptyData() {
     worked: '',
     adjust: '',
     satisfaction: 0,
+    achieved: '',
+    good: '',
+    better: '',
     final: ''
   };
 }

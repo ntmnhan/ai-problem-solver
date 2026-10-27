@@ -7,7 +7,7 @@ const buckets = new Map();
 function limited(ip) {
   const now = Date.now();
   const b = (buckets.get(ip) || []).filter((t) => now - t < 3600000);
-  if (b.length >= 10) { buckets.set(ip, b); return true; }
+  if (b.length >= 120) { buckets.set(ip, b); return true; }
   b.push(now);
   buckets.set(ip, b);
   if (buckets.size > 5000) buckets.clear();

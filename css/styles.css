@@ -689,3 +689,16 @@ body.wiz #toasts { top: 64px; bottom: auto; }
   .fld.grow textarea, .fld textarea { min-height: 100px; }
   .wz-main .pick .pt { font-size: 1.08rem; }
 }
+
+/* v19: nhìn lại kế hoạch (bước 6), ghi chú dự phòng (bước 5) */
+.rv-list { display: flex; flex-direction: column; gap: 6px; }
+.rv-row { font-weight: 700; margin-top: 4px; }
+.seg.mini button { padding: 6px 8px; font-size: 0.85rem; min-height: 36px; }
+.chosen-note.warn { background: var(--warn-soft, #fff4dc); }
+.admin-note { background: var(--card-2, #f4f7ff); border-radius: 14px; padding: 10px 14px; font-size: 0.92rem; line-height: 1.5; margin: 8px 0; }
+.admin-note b { color: var(--primary); }
+.rv-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.rv-t { flex: 1; min-width: 0; font-weight: 700; overflow-wrap: anywhere; }
+.rv-chip { flex: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; min-height: 36px; background: var(--card); font-weight: 700; color: var(--muted); cursor: pointer; }
+.rv-chip.doing { background: #fff4dc; color: #8a5a00; border-color: #f0c870; }
+.rv-chip.done { background: #dcf5e6; color: #11703c; border-color: #8fd5ab; }

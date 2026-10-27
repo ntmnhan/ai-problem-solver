@@ -85,7 +85,7 @@ export function render(root, params) {
 
   // ---------- Dữ liệu ----------
   function update(fn, soft = false) {
-    const p = store.edit(id, fn, { step: n, soft });
+    const p = store.edit(id, (d) => { fn(d); if (n === 6) d.final = [d.good && ('Đã tốt: ' + d.good), d.better && ('Cần tốt hơn: ' + d.better)].filter(Boolean).join('\n'); }, { step: n, soft });
     if (p && n === 1 && p.titleAuto) {
       const t = (p.data.problem || '').trim().replace(/\s+/g, ' ').slice(0, 60);
       p.title = t || 'Vấn đề mới';
@@ -166,7 +166,6 @@ export function render(root, params) {
     if (n === 3 && !d.solutions.some((s) => s.picked && s.text.trim())) return 'Em hãy chọn ít nhất một biện pháp (chạm vào biện pháp để chọn).';
     if (n === 4) {
       if (!d.solutions.some((s) => s.picked && s.id === d.chosenId)) return 'Em hãy tự chọn một biện pháp ở trang cuối.';
-      if (!d.reason.trim()) return 'Em hãy viết lý do vì sao em chọn cách đó.';
     }
     if (n === 5 && !d.plan.some((t) => t.text.trim())) return 'Chưa có việc nào trong kế hoạch. Em bấm “Soạn lại” hoặc tự thêm một việc nhé.';
     if (n === 6 && d.happy === 'no') return 'Em chưa hài lòng thì mình quay lại Bước 3 nhé.';
@@ -307,8 +306,8 @@ export function render(root, params) {
     if (busy.suggest && !P().data.solutions.length) return loadingPage('Mình đang nghĩ vài biện pháp cho em…');
     if (fail.suggest && !P().data.solutions.length) return errorPage('Chưa nghĩ ra được biện pháp', () => fetchSuggest());
     return [{
-      q: 'Em chọn biện pháp nào?', hint: 'Chạm để chọn một hoặc nhiều cách, hoặc tự thêm cách của em.', mood: 'happy',
-      speak: () => 'Em chọn biện pháp nào? Mình gợi ý các cách sau. ' + P().data.solutions.map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em chạm vào cách em thích để chọn nhé.',
+      q: 'Em chọn biện pháp nào?', hint: 'Em có thể chọn NHIỀU cách cùng lúc: chạm vào từng cách em thấy hợp. Em cũng có thể tự thêm cách của em.', mood: 'happy',
+      speak: () => 'Em chọn biện pháp nào? Mình gợi ý các cách sau. ' + P().data.solutions.map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em có thể chọn nhiều cách cùng lúc, chạm vào những cách em thấy hợp nhé.',
       render: () => {
         const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Các biện pháp' });
         const hint = h('p', { class: 'wz-hint' });
@@ -378,7 +377,7 @@ export function render(root, params) {
         P().data.aiAnalysis[s.id] ? null : h('div', { class: 'row-end' }, h('span', { class: 'wz-hint' }, 'Chưa có gợi ý từ AI.'), btn('Nhờ AI phân tích', { small: true, icon: 'bulb', onClick: () => fetchAnalysis(true) })))
     }));
     pages.push({
-      q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em.', mood: 'cheer',
+      q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em. Phần lý do bên dưới không bắt buộc.', mood: 'cheer',
       speak: () => 'Em quyết định chọn cách nào? ' + pickedSols().map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em là người quyết định, mình không chọn thay em.',
       render: () => {
         const listEl = h('div', { class: 'pick-list', role: 'group', 'aria-label': 'Chọn một biện pháp' });
@@ -395,7 +394,7 @@ export function render(root, params) {
         };
         draw();
         return h('div', { class: 'col grow' }, listEl,
-          textField({ label: 'Vì sao cách em chọn phù hợp với em?', key: 'reason', placeholder: 'Em chọn cách này vì…', small: true }));
+          textField({ label: 'Vì sao cách em chọn phù hợp với em? (không bắt buộc, em có thể bỏ qua)', key: 'reason', placeholder: 'Em chọn cách này vì… (có thể để trống)', small: true }));
       }
     });
     return pages;
@@ -428,7 +427,7 @@ export function render(root, params) {
         const addNow = () => {
           const t = addInput.value.trim();
           if (!t) return;
-          update((dd) => { dd.plan.push({ id: store.newId('tk'), text: t.slice(0, 200), detail: '', time: '', resource: '', status: 'todo' }); });
+          update((dd) => { dd.plan.push({ id: store.newId('tk'), text: t.slice(0, 200), detail: '', time: '', resource: '', expect: '', backup: '', status: 'todo' }); });
           addInput.value = ''; checkRisk(); goPage(0);
         };
         addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNow(); } });
@@ -443,7 +442,7 @@ export function render(root, params) {
     const pages = [overview];
     P().data.plan.forEach((t, i) => pages.push({
       q: `Việc ${i + 1}: ${t.text}`, hint: t.time ? `Thời gian dự kiến: ${t.time}` : '', mood: 'happy', qclass: 'long',
-      speak: () => `Việc ${i + 1}: ${t.text}. ` + (t.detail ? `Cách làm: ${clean(t.detail)} ` : '') + (t.resource ? `Cần: ${t.resource}.` : '') + (t.time ? ` Thời gian dự kiến: ${t.time}.` : ''),
+      speak: () => `Việc ${i + 1}: ${t.text}. ` + (t.detail ? `Cách làm: ${clean(t.detail)} ` : '') + (t.expect ? `Làm xong, em sẽ: ${clean(t.expect)} ` : '') + (t.backup ? `Nếu chưa được: ${clean(t.backup)} ` : '') + (t.resource ? `Cần: ${t.resource}.` : '') + (t.time ? ` Thời gian dự kiến: ${t.time}.` : ''),
       render: () => {
         const stat = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Tình trạng việc này' });
         const drawStat = () => {
@@ -464,6 +463,8 @@ export function render(root, params) {
             return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, 'Cách em sẽ làm việc này'), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
           })();
         return h('div', { class: 'col grow' }, body,
+          t.expect ? h('div', { class: 'chosen-note' }, icon('target', 16), h('span', null, h('b', null, 'Làm xong, em sẽ: '), t.expect)) : null,
+          t.backup ? h('div', { class: 'chosen-note warn' }, icon('refresh', 16), h('span', null, h('b', null, 'Nếu chưa được: '), t.backup)) : null,
           t.resource ? h('div', { class: 'chosen-note' }, icon('users', 16), h('span', null, h('b', null, 'Cần: '), t.resource)) : null,
           h('div', { class: 'fld-cap' }, 'Em đã làm việc này chưa? (em tự cập nhật)'), stat);
       }
@@ -480,7 +481,7 @@ export function render(root, params) {
     });
     if (!ok) return;
     store.reopenFrom(id, 3, (d) => {
-      d.chosenId = null; d.reason = ''; d.plan = []; d.aiPlan = []; d.happy = ''; d.satisfaction = 0; d.final = '';
+      d.chosenId = null; d.reason = ''; d.plan = []; d.aiPlan = []; d.happy = ''; d.achieved = ''; d.good = ''; d.better = ''; d.satisfaction = 0; d.final = '';
       d.solutions.forEach((s) => { s.picked = false; });
     });
     location.hash = `#/problem/${id}/3`;
@@ -489,7 +490,30 @@ export function render(root, params) {
   function pagesStep6() {
     const d0 = P().data;
     const chosen = d0.solutions.find((s) => s.id === d0.chosenId);
+    const ACH = [['yes', 'Đã đạt'], ['part', 'Đạt một phần'], ['no', 'Chưa đạt']];
     return [
+      {
+        q: 'Nhìn lại kế hoạch của em', hint: d0.goal ? `Kết quả em mong muốn: ${d0.goal}` : 'Em đã làm được những việc nào rồi?', mood: 'think', qclass: 'long',
+        render: () => {
+          const listEl = h('div', { class: 'rv-list' });
+          const achEl = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Em đạt được kết quả mong muốn chưa?' });
+          const draw = () => {
+            clear(listEl); clear(achEl);
+            P().data.plan.filter((t) => t.text.trim()).forEach((t, i) => {
+              const next = () => TSTAT[(TSTAT.findIndex(([k]) => k === t.status) + 1) % TSTAT.length][0];
+              const lab = (TSTAT.find(([k]) => k === t.status) || TSTAT[0])[1];
+              listEl.appendChild(h('div', { class: 'rv-row' },
+                h('span', { class: 'rv-t' }, `${i + 1}. ${t.text}`),
+                h('button', { type: 'button', class: `rv-chip ${t.status}`, 'aria-label': `Việc ${i + 1}: ${lab}. Chạm để đổi tình trạng`, onClick: () => { update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x.status = next(); }, true); draw(); } }, lab)));
+            });
+            if (!listEl.firstChild) listEl.appendChild(h('p', { class: 'muted' }, 'Chưa có việc nào trong kế hoạch.'));
+            const cur = P().data.achieved;
+            ACH.forEach(([k, v]) => achEl.appendChild(h('button', { type: 'button', class: cur === k ? 'on' : '', 'aria-pressed': cur === k ? 'true' : 'false', onClick: () => { update((dd) => { dd.achieved = dd.achieved === k ? '' : k; }); draw(); } }, v)));
+          };
+          draw();
+          return h('div', { class: 'col grow' }, listEl, h('p', { class: 'wz-hint' }, 'Chạm vào tình trạng để đổi.'), h('div', { class: 'fld-cap' }, 'Em đạt được kết quả mong muốn chưa? (không bắt buộc)'), achEl);
+        }
+      },
       {
         q: 'Em có hài lòng với cách giải quyết này không?', hint: chosen ? `Cách em chọn: ${chosen.text}` : '', mood: 'think', qclass: 'long',
         render: () => {
@@ -510,16 +534,21 @@ export function render(root, params) {
         }
       },
       {
-        q: 'Em cho điểm và viết nhận xét nhé', hint: 'Không bắt buộc, nhưng giúp mình làm tốt hơn.', mood: 'cheer',
+        q: 'Cái gì đã tốt? Cái gì cần tốt hơn?', hint: 'Không bắt buộc, nhưng giúp em rút kinh nghiệm cho lần sau.', mood: 'cheer',
+        render: () => h('div', { class: 'col grow' },
+          textField({ label: 'Điều đã làm tốt', key: 'good', placeholder: 'Em thấy mình đã làm tốt…', small: true }),
+          textField({ label: 'Điều cần làm tốt hơn', key: 'better', placeholder: 'Lần sau em sẽ cố gắng…', small: true }))
+      },
+      {
+        q: 'Em cho mấy điểm cho cách giải quyết này?', hint: '1 = chưa tốt, 5 = rất tốt. Không bắt buộc.', mood: 'happy',
         render: () => {
           const satEl = h('div', { class: 'feas' });
           const drawSat = () => {
             clear(satEl);
-            satEl.append(h('span', { class: 'fld-cap' }, 'Em cho mấy điểm? (1 = chưa tốt, 5 = rất tốt)'),
-              seg([1, 2, 3, 4, 5], P().data.satisfaction, (v) => { update((d) => { d.satisfaction = d.satisfaction === v ? 0 : v; }); drawSat(); }));
+            satEl.append(seg([1, 2, 3, 4, 5], P().data.satisfaction, (v) => { update((d) => { d.satisfaction = d.satisfaction === v ? 0 : v; }); drawSat(); }));
           };
           drawSat();
-          return h('div', { class: 'col grow' }, satEl, textField({ label: 'Nhận xét của em', key: 'final', placeholder: 'Em thấy cách giải quyết này…' }));
+          return h('div', { class: 'col grow' }, satEl);
         }
       },
       { q: 'Em có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi em tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
@@ -557,7 +586,7 @@ export function render(root, params) {
           category: d.category, title: P().title,
           problem: d.problem, cause: d.cause, goal: d.goal,
           chosen: ch ? ch.text : '', reason: d.reason,
-          plan: d.plan.filter((t) => t.text.trim()).map((t, i) => `${i + 1}. ${t.text}${t.time ? ' (' + t.time + ')' : ''}${t.detail ? ': ' + t.detail : ''}`).join('\n'),
+          plan: d.plan.filter((t) => t.text.trim()).map((t, i) => `${i + 1}. ${t.text}${t.time ? ' (' + t.time + ')' : ''}${t.detail ? ': ' + t.detail : ''}${t.backup ? ' (Nếu chưa được: ' + t.backup + ')' : ''}`).join('\n'),
           happy: d.happy, final: d.final,
           satisfaction: d.satisfaction, stepsDone: store.stepsDone(P())
         });
@@ -587,6 +616,24 @@ export function render(root, params) {
   let sugRedraw = null;
   const refreshPages = () => { if (alive) goPage(sub); };
 
+  // Bỏ các ý quá giống nhau (so sánh tập từ), để các biện pháp / việc không lặp lại.
+  const words = (t) => new Set(String(t || '').toLowerCase().normalize('NFC').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((w) => w.length > 1));
+  const similar = (a, b) => {
+    const A = words(a), B = words(b);
+    if (!A.size || !B.size) return false;
+    let inter = 0;
+    A.forEach((w) => { if (B.has(w)) inter++; });
+    return inter / Math.min(A.size, B.size) >= 0.7 && inter / (A.size + B.size - inter) >= 0.5;
+  };
+  function dedupe(list, key, seed = []) {
+    const kept = [];
+    list.forEach((x) => {
+      const k = key(x);
+      if (![...seed, ...kept.map(key)].some((o) => similar(o, k))) kept.push(x);
+    });
+    return kept;
+  }
+
   async function fetchSuggest() {
     if (busy.suggest) return;
     busy.suggest = true; fail.suggest = false;
@@ -595,7 +642,8 @@ export function render(root, params) {
     busy.suggest = false;
     if (!alive) return;
     if (res) {
-      const opts = (Array.isArray(res.options) ? res.options : []).map((t) => String(t).trim()).filter(Boolean).slice(0, 3);
+      const have = P().data.solutions.map((x) => x.text);
+      const opts = dedupe((Array.isArray(res.options) ? res.options : []).map((t) => String(t).trim()).filter(Boolean), (t) => t, have).slice(0, 5);
       update((d) => { opts.forEach((t) => d.solutions.push({ id: store.newId('sl'), text: t.slice(0, 200), source: 'ai', picked: false })); }, true);
       if (!opts.length) fail.suggest = true;
     } else fail.suggest = true;
@@ -640,7 +688,7 @@ export function render(root, params) {
     busy.plan = false;
     if (!alive) return;
     const items = res && Array.isArray(res.items)
-      ? res.items.slice(0, 6).map((it) => ({ id: store.newId('tk'), text: String(it.text || '').slice(0, 200), detail: String(it.detail || '').slice(0, 600), time: String(it.time || '').slice(0, 60), resource: String(it.resource || '').slice(0, 120), status: 'todo' })).filter((x) => x.text)
+      ? dedupe(res.items.map((it) => ({ id: store.newId('tk'), text: String(it.text || '').slice(0, 200), detail: String(it.detail || '').slice(0, 700), time: String(it.time || '').slice(0, 60), resource: String(it.resource || '').slice(0, 120), expect: String(it.expect || '').slice(0, 250), backup: String(it.backup || '').slice(0, 250), status: 'todo' })).filter((x) => x.text), (x) => x.text + ' ' + x.detail).slice(0, 6)
       : [];
     if (items.length) update((dd) => { dd.plan = items; dd.aiPlan = []; }, true); else fail.plan = true;
     refreshPages();

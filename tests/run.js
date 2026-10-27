@@ -149,6 +149,19 @@ function gemini(obj, extra = {}) {
     assert(last.includes('Xin lỗi bạn') && /Không xếp hạng/.test(last));
   });
 
+  await t('A-20', 'Gợi ý đúng 5 biện pháp khác hướng; kế hoạch yêu cầu các việc khác hẳn nhau, có kết quả mong đợi và phương án dự phòng', async () => {
+    let sent;
+    global.fetch = async (u, init) => { sent = JSON.parse(init.body); return gemini({ intro: 'x', options: ['a'], note: 'n', items: [], risk: 'none' }); };
+    let res = mockRes();
+    await chat(mockReq({ step: 3, task: 'suggest_options', payload: { existing: [] }, messages: [] }), res);
+    assert(/ĐÚNG 5/.test(sent.contents[sent.contents.length - 1].parts[0].text));
+    res = mockRes();
+    await chat(mockReq({ step: 5, task: 'breakdown', payload: { chosen: 'Xin lỗi bạn' }, messages: [] }), res);
+    const t5 = sent.contents[sent.contents.length - 1].parts[0].text;
+    assert(/KHÁC HẲN/.test(t5) && /expect/.test(t5) && /backup/.test(t5) && /SMART/.test(t5));
+    assert(JSON.stringify(sent.generationConfig.responseSchema).includes('"backup"'));
+  });
+
   await t('A-12', 'Tác vụ phân tích: dặn AI không chọn thay học sinh', async () => {
     let sent;
     global.fetch = async (u, init) => { sent = JSON.parse(init.body); return gemini({ note: 'n', items: [{ solution: 'a', pros: ['x'], cons: ['y'], consequences: 'z' }], risk: 'none' }); };

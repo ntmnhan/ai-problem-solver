@@ -79,15 +79,43 @@ export function isListening() {
   return listening;
 }
 
-let voiceCache = null;
+// ----- Cài đặt giọng đọc: tốc độ và giọng nam/nữ (lưu trên máy) -----
+const RATE_KEY = 'aips_tts_rate';
+const GENDER_KEY = 'aips_tts_gender'; // 'f' (nữ) | 'm' (nam) | '' (mặc định)
+const NAME_KEY = 'aips_tts_voice';    // tên giọng cụ thể (nếu em chọn)
+export const RATES = [['0.8', 'Chậm'], ['1', 'Vừa'], ['1.25', 'Nhanh']];
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* bỏ qua */ } };
+export const getRate = () => { const r = lsGet(RATE_KEY, '1'); return RATES.some(([k]) => k === r) ? r : '1'; };
+export const setRate = (r) => lsSet(RATE_KEY, String(r));
+export const getGender = () => { const g = lsGet(GENDER_KEY, ''); return g === 'f' || g === 'm' ? g : ''; };
+export const setGender = (g) => { lsSet(GENDER_KEY, g || ''); lsSet(NAME_KEY, ''); };
+export const getVoiceName = () => lsGet(NAME_KEY, '');
+export const setVoiceName = (n) => lsSet(NAME_KEY, n || '');
+
 const isVi = (v) => /^vi([-_]|$)/i.test(v.lang || '') || /vietnam|tiếng việt/i.test(v.name || '');
-// Chọn giọng tiếng Việt (ưu tiên giọng chất lượng cao). Không lưu cache khi chưa có danh sách giọng.
+// Trình duyệt không cho biết giới tính của giọng: đoán theo tên giọng phổ biến (Microsoft, Google, Apple, Android).
+export function voiceGender(v) {
+  const n = String(v.name || '').toLowerCase();
+  if (/female|nữ|hoaimy|hoài my|linh|\bvif\b|-vif-|vie-vnm-x-vif|thu\b|lan\b/.test(n)) return 'f';
+  if (/\bmale\b|namminh|nam minh|\bvic\b|-vic-|\bvid\b|-vid-|\ban\b|minh\b|nam\b/.test(n)) return 'm';
+  return '';
+}
+export function viVoices() {
+  let all = [];
+  try { all = window.speechSynthesis.getVoices() || []; } catch (e) { all = []; }
+  return all.filter(isVi);
+}
+const quality = (v) => (/natural|online/i.test(v.name) ? 2 : /google/i.test(v.name) ? 1 : 0);
 function pickVoice() {
-  if (voiceCache) return voiceCache;
-  const voices = window.speechSynthesis.getVoices() || [];
-  const vi = voices.filter(isVi);
-  voiceCache = vi.find((v) => /google|natural|online|hoaimy|namminh/i.test(v.name)) || vi[0] || null;
-  return voiceCache;
+  const vi = viVoices();
+  if (!vi.length) return null;
+  const byName = getVoiceName();
+  if (byName) { const f = vi.find((v) => v.name === byName); if (f) return f; }
+  const g = getGender();
+  let pool = vi;
+  if (g) { const m = vi.filter((v) => voiceGender(v) === g); if (m.length) pool = m; }
+  return pool.slice().sort((a, b) => quality(b) - quality(a))[0];
 }
 export function hasViVoice() {
   let voices = [];
@@ -95,7 +123,7 @@ export function hasViVoice() {
   return voices.length === 0 ? null : voices.some(isVi); // null: chưa biết (danh sách giọng chưa tải)
 }
 
-// onState('speaking'|'stopped')
+// onState('speaking'|'stopped'|'novoice'|'error')
 export function speak(text, onState) {
   if (!supportsTTS) {
     onState && onState('error');
@@ -108,7 +136,7 @@ export function speak(text, onState) {
   u.lang = 'vi-VN';
   const v = pickVoice();
   if (v) u.voice = v;
-  u.rate = 1;
+  u.rate = parseFloat(getRate()) || 1;
   u.onstart = () => onState && onState('speaking');
   u.onend = () => onState && onState('stopped');
   u.onerror = () => onState && onState('stopped');
@@ -129,6 +157,6 @@ export function stopAll() {
 
 if (supportsTTS) {
   try {
-    window.speechSynthesis.onvoiceschanged = () => { voiceCache = null; };
+    window.speechSynthesis.onvoiceschanged = () => { /* danh sách giọng đã tải */ };
   } catch (e) { /* bỏ qua */ }
 }

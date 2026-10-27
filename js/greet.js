@@ -4,16 +4,12 @@
 // nếu bị chặn thì phát ở lần chạm / bấm phím đầu tiên.
 export const GREETING_TEXT = 'Xin chào bạn đã đến với AI Problem Solver. Hãy nhập tên, lớp, hoặc tiếp tục với chế độ ẩn danh, rồi bấm Bắt đầu để chia sẻ câu chuyện của bạn với Cú nhé.';
 const SRC = 'assets/greeting.mp3';
-const SESSION_KEY = 'aips_greeted';
-const AUTO_KEY = 'aips_autoread';
-
-const autoOn = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
-const seen = () => { try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) { return false; } };
-const mark = () => { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) { /* bỏ qua */ } };
+import * as voice from './voice.js';
 
 let audio = null;
 function get() {
   if (!audio) { audio = new Audio(SRC); audio.preload = 'auto'; }
+  try { audio.playbackRate = parseFloat(voice.getRate()) || 1; } catch (e) { /* bỏ qua */ }
   return audio;
 }
 
@@ -35,19 +31,7 @@ export async function playGreeting() {
   }
 }
 
-// Tự chào khi vào trang; nếu bị chặn thì chờ lần tương tác đầu tiên. Trả về hàm dọn dẹp.
+// Không tự phát: lời chào chỉ vang lên khi em bấm nút "Nghe lời chào". Giữ hàm để tương thích.
 export function autoGreet() {
-  if (seen() || !autoOn()) return () => {};
-  let off = () => {};
-  playGreeting().then((ok) => {
-    if (ok) { mark(); return; }
-    const onTouch = () => {
-      off();
-      playGreeting().then((p) => { if (p) mark(); });
-    };
-    window.addEventListener('pointerdown', onTouch, true);
-    window.addEventListener('keydown', onTouch, true);
-    off = () => { window.removeEventListener('pointerdown', onTouch, true); window.removeEventListener('keydown', onTouch, true); };
-  });
-  return () => { off(); stopGreeting(); };
+  return () => { stopGreeting(); };
 }

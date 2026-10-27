@@ -12,6 +12,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
   <script>
+    // Chiều cao khung nhìn thật (trình duyệt cũ, Zalo/Facebook/Samsung... chưa hỗ trợ đơn vị dvh).
+    (function () {
+      function setH() { document.documentElement.style.setProperty('--app-h', (window.innerHeight || document.documentElement.clientHeight) + 'px'); }
+      setH();
+      window.addEventListener('resize', setH);
+      window.addEventListener('orientationchange', function () { setTimeout(setH, 250); });
+    })();
+  </script>
+  <script>
     // Áp dụng nền sáng/tối trước khi vẽ giao diện để không bị nháy.
     (function () {
       try {

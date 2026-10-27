@@ -34,6 +34,7 @@ const ICONS = {
   menu: 'M3 12h18M3 6h18M3 18h18',
   mic: 'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v4 M8 23h8',
   send: 'M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z',
+  settings: 'M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6',
   volume: 'M11 5L6 9H2v6h4l5 4V5z M19.07 4.93a10 10 0 0 1 0 14.14 M15.54 8.46a5 5 0 0 1 0 7.07',
   stop: 'M6 6h12v12H6z',
   plus: 'M12 5v14M5 12h14',

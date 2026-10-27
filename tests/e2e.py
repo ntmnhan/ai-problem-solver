@@ -884,20 +884,43 @@ def run():
             page.get_by_label('Kết quả em mong muốn là…').fill('Z')
             confirm_step(page)
             expect(page.locator('.pick-row')).to_have_count(5)
+            page.wait_for_timeout(1500)
+            assert page.evaluate('window.__ttsSpoken.length') == 0, 'app không được tự đọc'
+            assert page.locator('#auto-read').count() == 0
+            page.locator('.listen-btn').click()
             page.wait_for_function("window.__ttsSpoken.some(t => t.includes('Cách 1'))", timeout=15000)
             first = page.evaluate("window.__ttsSpoken.find(t => t.includes('Cách 1'))")
             assert 'Cách 1' in first and 'Em chọn biện pháp nào' in first, first
-            n0 = page.evaluate('window.__ttsSpoken.length')
-            expect(page.locator('.listen-btn .lt')).to_have_text('Nghe', timeout=8000)  # đợi đọc xong (đang đọc thì nút là Dừng)
-            page.locator('.listen-btn').click()
-            page.wait_for_function(f'window.__ttsSpoken.length > {n0}', timeout=15000)
-            page.locator('#auto-read').uncheck()
-            assert page.evaluate("localStorage.getItem('aips_autoread')") == '0'
             page.locator('#sfx-btn').click()
             assert page.evaluate("localStorage.getItem('aips_sfx')") == '0'
             expect(page.locator('#sfx-btn')).to_have_attribute('aria-pressed', 'false')
             ctx.close()
-        record('SD-01', 'Bước 3: AI tự đọc các biện pháp, có nút Nghe, tắt được Tự đọc; có nút bật/tắt âm thanh chuyển bước', t_read_aloud_sfx)
+        record('SD-01', 'Bước 3: app KHÔNG tự đọc, chỉ đọc khi bấm Nghe; có nút bật/tắt âm thanh chuyển bước', t_read_aloud_sfx)
+
+        def t_voice_settings():
+            VOICES = FAKE_SR.replace("getVoices(){ return []; }", "getVoices(){ return [{lang:'vi-VN',name:'Microsoft HoaiMy Online (Natural)'},{lang:'vi-VN',name:'Microsoft NamMinh Online (Natural)'}]; }")
+            VOICES = VOICES.replace("speak(u){ window.__ttsSpoken.push(u.text);", "speak(u){ window.__ttsSpoken.push(u.text); window.__ttsLast={rate:u.rate,voice:u.voice&&u.voice.name};")
+            ctx, page = new_page(browser, init_scripts=[VOICES])
+            start_anon(page)
+            new_problem(page)
+            page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('X')
+            confirm_step(page)
+            page.get_by_label('Nguyên nhân em nghĩ là…').fill('Y')
+            sub(page, 2, 2)
+            page.get_by_label('Kết quả em mong muốn là…').fill('Z')
+            confirm_step(page)
+            page.locator('#voice-settings').click()
+            dlg = page.get_by_role('dialog')
+            dlg.get_by_role('button', name='Nhanh').click()
+            dlg.get_by_role('button', name=re.compile('Giọng nam')).click()
+            assert page.evaluate("localStorage.getItem('aips_tts_rate')") == '1.25'
+            assert page.evaluate("localStorage.getItem('aips_tts_gender')") == 'm'
+            dlg.locator('#vs-test').click()
+            page.wait_for_function('window.__ttsLast', timeout=5000)
+            last = page.evaluate('window.__ttsLast')
+            assert last['rate'] == 1.25 and 'NamMinh' in (last['voice'] or ''), last
+            ctx.close()
+        record('SD-03', 'Cài đặt giọng: chọn tốc độ Chậm/Vừa/Nhanh và giọng nam/nữ, được lưu và áp dụng khi nghe thử', t_voice_settings)
 
         def t_voice_no_null():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
@@ -927,6 +950,7 @@ def run():
             page.get_by_label('Kết quả em mong muốn là…').fill('Z')
             confirm_step(page)
             expect(page.locator('.pick-row')).to_have_count(5)
+            page.locator('.listen-btn').click()
             expect(page.get_by_text('chưa có giọng đọc tiếng Việt')).to_be_visible(timeout=8000)
             assert page.evaluate('window.__ttsSpoken.length') == 0, 'không được đọc bằng giọng tiếng Anh'
             ctx.close()
@@ -935,33 +959,29 @@ def run():
         def t_greeting_and_icons():
             PLAY_OK = "window.__played=[]; HTMLMediaElement.prototype.play=function(){ window.__played.push(this.src); return Promise.resolve(); };"
             PLAY_BLOCK = "window.__played=[]; window.__act=false; window.addEventListener('pointerdown',()=>{window.__act=true;},true); HTMLMediaElement.prototype.play=function(){ if(!window.__act) return Promise.reject(new DOMException('blocked','NotAllowedError')); window.__played.push(this.src); return Promise.resolve(); };"
-            # 1) tự chào bằng tệp âm thanh thu sẵn khi vừa vào (không phụ thuộc giọng của trình duyệt)
+            # 1) KHÔNG tự phát; chỉ phát tệp thu sẵn khi bấm nút, và áp tốc độ đã chọn
             ctx, page = new_page(browser, init_scripts=[PLAY_OK])
             page.goto(BASE + '/')
-            page.wait_for_function("window.__played.length >= 1", timeout=8000)
-            assert 'assets/greeting.mp3' in page.evaluate('window.__played[0]')
-            expect(page.locator('#greet-btn')).to_be_visible()
-            ctx.close()
-            # 2) bị chặn tự phát: phát ở lần chạm đầu tiên
-            ctx, page = new_page(browser, init_scripts=[PLAY_BLOCK])
-            page.goto(BASE + '/')
-            page.wait_for_timeout(700)
-            assert page.evaluate('window.__played.length') == 0
+            page.wait_for_timeout(1200)
+            assert page.evaluate('window.__played.length') == 0, 'không được tự phát lời chào'
             page.mouse.click(5, 300)
+            page.wait_for_timeout(300)
+            assert page.evaluate('window.__played.length') == 0
+            page.evaluate("localStorage.setItem('aips_tts_rate','1.25')")
+            page.locator('#greet-btn').click()
             page.wait_for_function("window.__played.length >= 1", timeout=5000)
+            assert 'assets/greeting.mp3' in page.evaluate('window.__played[0]')
             ctx.close()
             # 3) nút "Nghe lời chào" phát lại; icon trên thanh trên cùng hiển thị ở điện thoại 360px
             ctx, page = new_page(browser, (360, 740), init_scripts=[PLAY_OK])
             page.goto(BASE + '/')
-            page.wait_for_function("window.__played.length >= 1", timeout=8000)
-            n0 = page.evaluate('window.__played.length')
             page.locator('#greet-btn').click()
-            page.wait_for_function(f"window.__played.length > {n0}", timeout=5000)
+            page.wait_for_function("window.__played.length >= 1", timeout=5000)
             for sel in ['#guide-link', '#admin-link']:
                 bb = page.locator(sel + ' svg').bounding_box()
                 assert bb and bb['width'] >= 16 and bb['height'] >= 16, f'icon {sel} bị ẩn'
             ctx.close()
-        record('GR-01', 'Lời chào bằng tệp âm thanh tiếng Việt: tự phát khi vào, bị chặn thì phát ở lần chạm đầu, có nút Nghe lời chào; icon Hướng dẫn/Admin hiển thị ở 360px', t_greeting_and_icons)
+        record('GR-01', 'Lời chào bằng tệp âm thanh tiếng Việt: không tự phát, chỉ phát khi bấm Nghe lời chào; icon Hướng dẫn/Admin hiển thị ở 360px', t_greeting_and_icons)
 
         def t_poster():
             ctx, page = new_page(browser)
@@ -977,6 +997,46 @@ def run():
             ctx.close()
         record('PO-01', 'Trang Hướng dẫn có poster; bấm vào hiện poster lớn, đóng lại được', t_poster)
 
+        def t_no_overlap_phone():
+            LONG = 'Trò chuyện cởi mở với giáo viên bộ môn để chia sẻ về việc em chưa hiểu bài giảng trên lớp và nhờ thầy cô hướng dẫn thêm cách học phù hợp với em'
+            for (w, h_) in [(320, 568), (360, 640), (390, 844), (412, 915)]:
+                ctx, page = new_page(browser, (w, h_))
+                start_anon(page)
+                new_problem(page)
+                page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Em đang buồn vì điểm xấu')
+                confirm_step(page)
+                page.get_by_label('Nguyên nhân em nghĩ là…').fill('Em chưa hiểu bài')
+                sub(page, 2, 2)
+                page.get_by_label('Kết quả em mong muốn là…').fill('Điểm tốt hơn')
+                confirm_step(page)
+                expect(page.locator('.pick-row')).to_have_count(5)
+                for k in range(2):
+                    page.get_by_label('Thêm biện pháp của em').fill(LONG + ' ' + str(k))
+                    page.get_by_role('button', name='Thêm', exact=True).click()
+
+                def check(where):
+                    res = page.evaluate("""() => {
+                        const els = [...document.querySelectorAll('.wz-main .pick')];
+                        const bad = [];
+                        els.forEach((e, i) => {
+                            if (e.scrollHeight > e.clientHeight + 2) bad.push('hàng ' + i + ' bị cắt/chồng chữ');
+                        });
+                        const r = els.map((e) => e.getBoundingClientRect()).filter((b) => b.height > 0);
+                        for (let i = 1; i < r.length; i++) if (r[i].top < r[i - 1].bottom - 1 && r[i].top < r[i - 1].bottom - 1 && Math.abs(r[i].left - r[i - 1].left) < 2) bad.push('hàng ' + i + ' đè lên hàng trước');
+                        return bad;
+                    }""")
+                    assert not res, f'{where} {w}x{h_}: {res}'
+                check('Bước 3')
+                confirm_step(page)
+                page.locator('.pdot').last.click()
+                expect(page.get_by_text('Em quyết định chọn cách nào?').first).to_be_visible()
+                check('Bước 4')
+                # khung cuộn được: hàng cuối đạt tới được bằng cuộn, nút Xong bước này vẫn thấy
+                bb = page.locator('#finish-step').bounding_box()
+                assert bb and bb['y'] + bb['height'] <= h_ + 1, f'nút Xong bước này bị đẩy khỏi màn hình {w}x{h_}'
+                ctx.close()
+        record('LY-01', 'Điện thoại 320-412px: danh sách biện pháp dài không bị chồng chữ/đè hàng ở Bước 3 và 4, nút Xong bước này luôn thấy', t_no_overlap_phone)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)
@@ -990,6 +1050,9 @@ def run():
             page.get_by_label('Tin nhắn của em').fill('em đang buồn vì điểm kém (đã sửa)')
             page.get_by_role('button', name='Gửi tin nhắn').click()
             expect(page.get_by_text('Mình hiểu rồi')).to_be_visible()
+            page.wait_for_timeout(1200)
+            assert page.evaluate('window.__ttsSpoken.length') == 0, 'không tự đọc sau khi nói bằng giọng'
+            dlg.locator('.msg-listen').last.click()
             expect(dlg.get_by_text('Đang phát âm thanh…')).to_be_visible()
             spoken = page.evaluate('window.__ttsSpoken')
             assert spoken and any('Mình hiểu rồi' in t for t in spoken), spoken
@@ -1001,7 +1064,7 @@ def run():
             dlg.get_by_role('button', name='Quay lại nhập văn bản').click()
             expect(dlg.get_by_text('Đã dừng')).to_have_count(0)
             ctx.close()
-        record('VO-01', 'Voice Mode: nghe→chữ hiện trong ô để sửa trước khi gửi; đọc phản hồi; có Dừng đọc/Quay lại văn bản; hiển thị đủ trạng thái', t_voice)
+        record('VO-01', 'Voice Mode: nghe→chữ hiện trong ô để sửa trước khi gửi; chỉ đọc phản hồi khi bấm Nghe; có Dừng đọc/Quay lại văn bản; hiển thị đủ trạng thái', t_voice)
 
         def t_voice_unsupported():
             ctx, page = new_page(browser, init_scripts=["delete window.SpeechRecognition; delete window.webkitSpeechRecognition; Object.defineProperty(window,'speechSynthesis',{value:undefined,configurable:true});"])

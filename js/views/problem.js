@@ -8,6 +8,7 @@ import { detectRisk } from '../safety.js';
 import { owl, badge, STEP_ICON, STEP_COLOR, CAT_ICON, CAT_COLOR } from '../art.js';
 import { voiceInput } from '../voiceui.js';
 import { playSfx, sfxOn, setSfx } from '../sound.js';
+import { settingsButton } from '../voicesettings.js';
 import { h, icon, btn, clear, autoGrow, toast, modal, confirmDialog, promptDialog, safetyCard } from '../ui.js';
 
 const FEAS = ['Rất khó', 'Khó', 'Vừa', 'Dễ', 'Rất dễ'];
@@ -56,8 +57,6 @@ export function render(root, params) {
   const drawSfx = () => { sfxBtn.setAttribute('aria-pressed', sfxOn() ? 'true' : 'false'); sfxBtn.setAttribute('aria-label', sfxOn() ? 'Tắt âm thanh chuyển bước' : 'Bật âm thanh chuyển bước'); sfxBtn.classList.toggle('off', !sfxOn()); };
   sfxBtn.addEventListener('click', () => { setSfx(!sfxOn()); drawSfx(); if (sfxOn()) playSfx('step'); });
   drawSfx();
-  const AUTO_KEY = 'aips_autoread';
-  const autoRead = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
   let lastKey = '';
   let reading = false;
 
@@ -380,7 +379,7 @@ export function render(root, params) {
       q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em. Phần lý do bên dưới không bắt buộc.', mood: 'cheer',
       speak: () => 'Em quyết định chọn cách nào? ' + pickedSols().map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em là người quyết định, mình không chọn thay em.',
       render: () => {
-        const listEl = h('div', { class: 'pick-list', role: 'group', 'aria-label': 'Chọn một biện pháp' });
+        const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Chọn một biện pháp' });
         const draw = () => {
           clear(listEl);
           const d = P().data;
@@ -394,7 +393,7 @@ export function render(root, params) {
         };
         draw();
         return h('div', { class: 'col grow' }, listEl,
-          textField({ label: 'Vì sao cách em chọn phù hợp với em? (không bắt buộc, em có thể bỏ qua)', key: 'reason', placeholder: 'Em chọn cách này vì… (có thể để trống)', small: true }));
+          textField({ label: 'Vì sao cách em chọn phù hợp với em? (không bắt buộc, em có thể bỏ qua)', key: 'reason', placeholder: 'Em chọn cách này vì… (có thể để trống)', small: true, grow: false }));
       }
     });
     return pages;
@@ -617,7 +616,9 @@ export function render(root, params) {
   const refreshPages = () => { if (alive) goPage(sub); };
 
   // Bỏ các ý quá giống nhau (so sánh tập từ), để các biện pháp / việc không lặp lại.
-  const words = (t) => new Set(String(t || '').toLowerCase().normalize('NFC').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((w) => w.length > 1));
+  let NON_WORD = null;
+  try { NON_WORD = new RegExp('[^\\p{L}\\p{N}\\s]', 'gu'); } catch (e) { NON_WORD = /[.,;:!?"'()\[\]{}\-–—…]/g; } // trình duyệt cũ không hỗ trợ \p{L}
+  const words = (t) => new Set(String(t || '').toLowerCase().replace(NON_WORD, ' ').split(/\s+/).filter((w) => w.length > 1));
   const similar = (a, b) => {
     const A = words(a), B = words(b);
     if (!A.size || !B.size) return false;
@@ -698,7 +699,7 @@ export function render(root, params) {
   const chat = buildChat();
   function openChat() {
     modal({
-      title: 'Trợ lý AI', titleIcon: owl({ size: 30 }), variant: 'sheet', body: chat.el, headExtra: chat.ttsBtn,
+      title: 'Trợ lý AI', titleIcon: owl({ size: 30 }), variant: 'sheet', body: chat.el, headExtra: settingsButton(),
       onClose: () => { voice.stopAll(); chat.vi.reset(); chat.afterClose(); }
     });
     chat.afterOpen();
@@ -710,23 +711,16 @@ export function render(root, params) {
     const fit = autoGrow(ta, 120);
     const sendBtn = h('button', { type: 'button', class: 'icon-btn send', 'aria-label': 'Gửi tin nhắn' }, icon('send', 20));
     const vi = voiceInput({ ta, hint: 'Em xem lại chữ, sửa nếu cần rồi bấm Gửi nhé.' });
-    const ttsBtn = h('button', { type: 'button', class: 'icon-btn tts', 'aria-pressed': 'true', 'aria-label': 'Đọc phản hồi của trợ lý', title: 'Đọc phản hồi của trợ lý' }, icon('volume', 18));
     let busy = false;
-    let readAloud = true;
-    if (!voice.supportsTTS) { ttsBtn.classList.add('hidden'); readAloud = false; }
-    ttsBtn.addEventListener('click', () => {
-      readAloud = !readAloud;
-      ttsBtn.setAttribute('aria-pressed', readAloud ? 'true' : 'false');
-      ttsBtn.classList.toggle('off', !readAloud);
-      if (!readAloud) { voice.stopSpeaking(); vi.setSpeaking(false); }
-    });
     ta.addEventListener('input', fit);
 
     const scroll = () => { log.scrollTop = log.scrollHeight; };
 
     function bubble(m) {
       const me = m.role === 'user';
-      const nodes = [h('div', { class: `msg ${me ? 'me' : 'ai'}` }, h('span', { class: 'who' }, me ? 'Em' : 'Trợ lý'), m.text)];
+      const listen = !me && voice.supportsTTS ? h('button', { type: 'button', class: 'msg-listen', 'aria-label': 'Nghe câu trả lời này' }, icon('volume', 14), h('span', null, 'Nghe')) : null;
+      if (listen) listen.addEventListener('click', () => { voice.stopListening(true); voice.speak(m.text, (s) => { vi.setSpeaking(s === 'speaking'); if (s === 'novoice') noViVoice(); }); });
+      const nodes = [h('div', { class: `msg ${me ? 'me' : 'ai'}` }, h('span', { class: 'who' }, me ? 'Em' : 'Trợ lý'), m.text, listen)];
       const level = me ? (m.risk ? 'concern' : null) : m.risk === 'danger' ? 'danger' : m.risk === 'concern' ? 'concern' : null;
       if (level) nodes.push(safetyCard(level));
       return nodes;
@@ -754,10 +748,6 @@ export function render(root, params) {
         const m = { role: 'ai', text, risk: res.risk || 'none' };
         store.addMessage(id, n, m);
         log.append(...bubble(m));
-        if (readAloud && viaVoice && voice.supportsTTS) {
-          voice.stopListening(true);
-          voice.speak(text, (s) => vi.setSpeaking(s === 'speaking'));
-        }
       } catch (e) {
         typing.remove();
         const err = h('div', { class: 'msg err', role: 'alert' }, h('strong', null, 'Chưa gửi được. '), e.message || 'Có lỗi xảy ra.', ' ',
@@ -804,7 +794,7 @@ export function render(root, params) {
       h('p', { class: 'chat-note' }, 'Trợ lý là AI nên có thể nhầm. Em đừng ghi họ tên, số điện thoại hay địa chỉ nhé.'));
     drawLog();
     return {
-      el, ttsBtn, vi,
+      el, vi,
       afterOpen: () => { drawLog(); setTimeout(scroll, 30); },
       afterClose: () => { if (refs.problem && n === 1) refs.problem.value = P().data.problem; if (n === 1) goPage(sub); }
     };
@@ -825,15 +815,12 @@ export function render(root, params) {
   }
   function readTools(pg) {
     const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe'));
-    const cb = h('input', { type: 'checkbox', id: 'auto-read' });
-    cb.checked = autoRead();
-    cb.addEventListener('change', () => { try { localStorage.setItem(AUTO_KEY, cb.checked ? '1' : '0'); } catch (e) { /* bỏ qua */ } if (!cb.checked) voice.stopSpeaking(); });
     syncListen = () => { lb.querySelector('.lt').textContent = reading ? 'Dừng' : 'Nghe'; lb.classList.toggle('on', reading); };
     lb.addEventListener('click', () => {
       if (reading) { voice.stopSpeaking(); reading = false; syncListen(); return; }
       voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); if (st === 'novoice') noViVoice(); });
     });
-    return h('div', { class: 'qtools' }, lb, h('label', { class: 'auto-read' }, cb, h('span', null, 'Tự đọc')));
+    return h('div', { class: 'qtools' }, lb, settingsButton());
   }
 
   function goPage(i) {
@@ -854,7 +841,6 @@ export function render(root, params) {
       lastKey = key;
       playSfx(first ? 'step' : 'page');
       voice.stopSpeaking();
-      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key && !voice.isListening()) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); if (st === 'novoice') noViVoice(); }); }, 450);
     }
     clear(mainEl);
     mainEl.appendChild(pg.render());

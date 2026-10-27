@@ -65,6 +65,15 @@ export function renderAbout(root) {
         h('p', null, 'Em là người quyết định. Trợ lý AI chỉ đặt câu hỏi gợi mở và giúp em cân nhắc; mình không tự chọn phương án và không tự đánh dấu hoàn thành thay em.')
       ),
       h('section', { class: 'card' },
+        h('h2', null, 'Cơ sở tham khảo'),
+        h('p', { class: 'muted small' }, 'Trợ lý tư vấn dựa trên các tài liệu sau:'),
+        h('ol', null,
+          h('li', null, 'Bộ Quy tắc ứng xử về bảo vệ trẻ em trên môi trường mạng (Bộ Thông tin và Truyền thông).'),
+          h('li', null, 'Tài liệu Kỹ năng giải quyết vấn đề và ra quyết định (quy trình 6 bước).'),
+          h('li', null, 'Chương trình giáo dục phổ thông - Chương trình tổng thể (Thông tư 32/2018/TT-BGDĐT).'),
+          h('li', null, 'UNESCO (2024), AI Competency Framework for Students.'))
+      ),
+      h('section', { class: 'card' },
         h('h2', null, 'Lưu ý'),
         h('ul', null,
           h('li', null, 'AI có thể nhầm. Em hãy tự kiểm chứng thông tin và hỏi ý kiến người lớn đáng tin cậy.'),

@@ -109,3 +109,7 @@ tests/              Kiểm thử + báo cáo
 - Bước 5: AI tự soạn các việc cần làm theo trình tự, kèm hướng dẫn cách làm; em đánh dấu tiến độ.
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
+
+## Phiên bản 1.3.1 — Tư vấn theo tài liệu tham khảo
+- Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
+- Trang "Giới thiệu" có mục "Cơ sở tham khảo".

@@ -323,6 +323,17 @@ function gemini(obj, extra = {}) {
     delete process.env.ADMIN_PASSWORD;
   });
 
+  await t('A-19', 'Lời nhắc hệ thống có cơ sở tham khảo: 6 bước, tiêu chí chọn giải pháp, VN-COP/111, UNESCO', async () => {
+    process.env.GEMINI_API_KEY = 'k';
+    const sent = [];
+    global.fetch = async (u, init) => { sent.push(JSON.parse(init.body)); return gemini({ reply: 'ok', risk: 'none' }); };
+    const res = mockRes();
+    await chat(mockReq({ step: 4, messages: [{ role: 'user', text: 'abc' }] }), res);
+    const sys = sent[0].systemInstruction.parts[0].text;
+    assert(/5 Tại sao/.test(sys) && /nguồn lực, thời gian/.test(sys) && /VN-COP/.test(sys) && /UNESCO/.test(sys) && /Chương trình giáo dục phổ thông/.test(sys));
+    assert(/Phân tích và lựa chọn/.test(sys));
+  });
+
   global.fetch = origFetch;
   let failed = 0;
   results.forEach((r) => { console.log(`${r.ok ? 'ĐẠT      ' : 'KHÔNG ĐẠT'}  ${r.id}  ${r.name}${r.ok ? '' : '  -> ' + r.err}`); if (!r.ok) failed++; });

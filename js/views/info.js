@@ -11,7 +11,7 @@ export function renderPrivacy(root) {
         h('h2', null, 'Dữ liệu của em nằm ở đâu?'),
         h('ul', null,
           h('li', null, 'Hồ sơ (họ tên, lớp nếu em nhập hoặc mã ẩn danh), các vấn đề, câu trả lời và hội thoại được lưu ', h('strong', null, 'ngay trên thiết bị của em'), ' (trình duyệt).'),
-          h('li', null, 'Website ', h('strong', null, 'không có tài khoản, mật khẩu'), ' và ', h('strong', null, 'không lưu hồ sơ của em trên máy chủ'), '.'),
+          h('li', null, 'Website ', h('strong', null, 'không có tài khoản, mật khẩu'), ' và ', h('strong', null, 'không tự lưu hồ sơ của em trên máy chủ'), '.'),
           h('li', null, 'Vì vậy chỉ em (hoặc người dùng chung thiết bị) xem được lịch sử. Không ai khác xem được chỉ bằng cách biết tên em.'),
           h('li', null, 'Nếu xóa dữ liệu trình duyệt hoặc đổi máy, em sẽ mất lịch sử, trừ khi em đã tải bản sao lưu.'))
       ),
@@ -22,6 +22,13 @@ export function renderPrivacy(root) {
           h('li', null, 'Máy chủ của website không lưu những nội dung này. Số điện thoại và email nếu có sẽ được tự động che trước khi gửi.'),
           h('li', null, 'Website dùng gói miễn phí của dịch vụ AI. Theo điều khoản của gói miễn phí, nhà cung cấp có thể dùng nội dung gửi tới để cải thiện sản phẩm của họ. ', h('strong', null, 'Em đừng ghi họ tên thật, số điện thoại, địa chỉ, mật khẩu hay thông tin riêng tư của em và người khác.'))
         )
+      ),
+      h('section', { class: 'card' },
+        h('h2', null, 'Gửi vấn đề cho thầy cô (tùy chọn)'),
+        h('ul', null,
+          h('li', null, 'Ở trang cuối của Bước 6, em có thể chọn gửi vấn đề cho thầy cô. ', h('strong', null, 'Chỉ khi em tick đồng ý và bấm “Gửi cho thầy cô”'), ' thì nội dung mới rời khỏi thiết bị của em.'),
+          h('li', null, 'Nội dung gửi gồm: vấn đề, mục tiêu, cách em chọn, kết quả, kết luận và họ tên, lớp, trường nếu em nhập (có thể bỏ trống để ẩn danh). ', h('strong', null, 'Không gửi'), ' cuộc trò chuyện với AI.'),
+          h('li', null, 'Thông tin được lưu vào bảng tính của nhà trường và chỉ thầy cô có mật khẩu quản trị mới xem được, để hỗ trợ em. Em có thể nhờ thầy cô xóa.'))
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Bộ đếm lượt truy cập, đánh giá và góp ý'),

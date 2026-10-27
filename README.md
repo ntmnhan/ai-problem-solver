@@ -91,3 +91,12 @@ tests/              Kiểm thử + báo cáo
 - Giao diện mới: mỗi bước một màn hình, không cuộn trang; chú cú thông thái; chat và gợi ý AI mở dạng khung trượt; micro dùng chung ở mọi ô nhập.
 - AI ổn định hơn: nhiều khóa/model dự phòng, nhớ model đang lỗi, tự bỏ cấu hình khi gặp lỗi 400, đọc JSON dễ tính, giảm thời gian suy nghĩ, dịch vụ dự phòng tùy chọn.
 - Kiểm tra AI: mở `/api/health` (liệt kê từng model: ok/mã lỗi, không lộ khóa).
+
+## Phiên bản 1.2.0 — Gửi cho thầy cô + trang quản trị
+- Trang cuối của Bước 6: học sinh có thể (không bắt buộc) nhập Họ tên, Lớp, Trường, tick đồng ý rồi "Gửi cho thầy cô". Không gửi hội thoại với AI. Để trống họ tên = ẩn danh.
+- Trang quản trị: `địa-chỉ-app/#/admin` (link "Dành cho thầy cô" ở chân trang). Đăng nhập bằng mật khẩu chung; xem danh sách, lọc theo lớp/nhóm/rủi ro/trạng thái, thống kê theo nhóm, đổi trạng thái (Mới / Đang hỗ trợ / Đã xong) + ghi chú, xóa, tải CSV (mở bằng Excel).
+- Mức rủi ro được máy chủ tự tính lại từ từ khóa an toàn; ca "Cần chú ý" được đánh dấu đỏ.
+- Cần làm để dùng:
+  1. Dán lại `apps-script/Code.gs` mới vào Apps Script → Triển khai > Quản lý bản triển khai > Chỉnh sửa > Phiên bản mới → Triển khai. (Tạo trang tính `VanDe` tự động.)
+  2. Vercel → Settings → Environment Variables: thêm `ADMIN_PASSWORD` (mật khẩu admin, dài và khó đoán) rồi Redeploy. `APPS_SCRIPT_URL`/`APPS_SCRIPT_TOKEN` dùng chung với bộ đếm.
+- Lưu ý bảo mật: bảng tính chứa dữ liệu học sinh, chỉ chia sẻ cho người có trách nhiệm; sai mật khẩu 8 lần sẽ bị khóa 15 phút.

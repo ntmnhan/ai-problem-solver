@@ -2,6 +2,8 @@
   "functions": {
     "api/chat.js": { "maxDuration": 30 },
     "api/health.js": { "maxDuration": 15 },
+    "api/share.js": { "maxDuration": 20 },
+    "api/admin.js": { "maxDuration": 20 },
     "api/stats.js": { "maxDuration": 15 },
     "api/feedback.js": { "maxDuration": 15 }
   },

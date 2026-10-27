@@ -3,7 +3,7 @@
 import { STEPS, CATEGORIES, STATUS_LABEL, TASK_STATUS } from '../config.js';
 import * as store from '../store.js';
 import * as voice from '../voice.js';
-import { askAI } from '../api.js';
+import { askAI, shareProblem } from '../api.js';
 import { detectRisk } from '../safety.js';
 import { owl, badge, STEP_ICON, STEP_COLOR, CAT_ICON, CAT_COLOR } from '../art.js';
 import { voiceInput } from '../voiceui.js';
@@ -470,8 +470,62 @@ export function render(root, params) {
           drawSat();
           return h('div', { class: 'col grow' }, satEl, textField({ label: 'Kết luận cuối cùng của em', key: 'final', placeholder: 'Em rút ra được điều gì từ chuyện này?' }));
         }
-      }
+      },
+      { q: 'Em có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi em tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
     ];
+  }
+
+  // ---------- Trang cuối: gửi cho thầy cô (tùy chọn, cần em tick đồng ý) ----------
+  function shareCard() {
+    const prof = store.getProfile() || {};
+    const last = P().shared || {};
+    const nameI = h('input', { type: 'text', class: 'input', maxlength: 60, placeholder: 'Họ và tên (có thể bỏ trống)', 'aria-label': 'Họ và tên', id: 'sh-name', autocomplete: 'off', value: last.name != null ? last.name : (prof.anonymous ? '' : prof.name || '') });
+    const clsI = h('input', { type: 'text', class: 'input', maxlength: 20, placeholder: 'Lớp', 'aria-label': 'Lớp', id: 'sh-cls', autocomplete: 'off', value: last.cls != null ? last.cls : (prof.anonymous ? '' : prof.cls || '') });
+    const schI = h('input', { type: 'text', class: 'input', maxlength: 80, placeholder: 'Trường', 'aria-label': 'Trường', id: 'sh-school', autocomplete: 'off', value: last.school || '' });
+    const chk = h('input', { type: 'checkbox', id: 'sh-ok', checked: false });
+    const status = h('div', { class: 'share-status', role: 'status' });
+    const sendB = btn(last.at ? 'Gửi lại bản cập nhật' : 'Gửi cho thầy cô', { kind: 'primary', icon: 'send', onClick: send });
+    sendB.id = 'sh-send';
+    sendB.disabled = true;
+    chk.addEventListener('change', () => { sendB.disabled = !chk.checked; });
+    const paint = () => {
+      clear(status);
+      if (P().shared && P().shared.at) {
+        status.append(icon('check', 16), h('span', null, 'Đã gửi cho thầy cô lúc ' + new Date(P().shared.at).toLocaleString('vi-VN') + '. Cảm ơn em đã tin tưởng!'));
+      }
+    };
+    async function send() {
+      if (!chk.checked) return;
+      const d = P().data;
+      const ch = d.solutions.find((x) => x.id === d.chosenId);
+      sendB.disabled = true;
+      try {
+        const r = await shareProblem({
+          consent: true, id,
+          name: nameI.value, cls: clsI.value, school: schI.value,
+          category: d.category, title: P().title,
+          problem: d.problem, known: d.known, unknown: d.unknown, goal: d.goal,
+          chosen: ch ? ch.text : '', reason: d.reason,
+          result: d.result, compare: d.compare, worked: d.worked, adjust: d.adjust, final: d.final,
+          satisfaction: d.satisfaction, stepsDone: store.stepsDone(P())
+        });
+        store.markShared(id, { at: (r && r.at) || Date.now(), name: nameI.value.trim(), cls: clsI.value.trim(), school: schI.value.trim() });
+        toast('Đã gửi cho thầy cô.', 'ok');
+        paint();
+        const lbl = sendB.querySelector('span'); if (lbl) lbl.textContent = 'Gửi lại bản cập nhật';
+      } catch (e) {
+        toast(e.message || 'Chưa gửi được. Em thử lại nhé.', 'error', 5000);
+      } finally {
+        sendB.disabled = !chk.checked;
+      }
+    }
+    paint();
+    return h('div', { class: 'col grow share-card' },
+      h('div', { class: 'share-fields' }, nameI, h('div', { class: 'share-row' }, clsI, schI)),
+      h('label', { class: 'check share-ok' }, chk,
+        h('span', null, 'Em đồng ý gửi vấn đề này (không gồm trò chuyện với AI) cho thầy cô để được hỗ trợ.')),
+      sendB, status,
+      h('p', { class: 'muted small share-note' }, 'Em có thể bỏ trống họ tên để ẩn danh. Nếu không muốn gửi, em bấm “Xong bước này” là được.'));
   }
 
   // ---------- Khay gợi ý của AI (không chiếm chỗ màn hình chính) ----------

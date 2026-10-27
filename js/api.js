@@ -63,3 +63,11 @@ export function postVisit() {
 export function sendFeedback(payload) {
   return request('/api/feedback', { method: 'POST', body: JSON.stringify(payload) }, 15000);
 }
+
+export function shareProblem(payload) {
+  return request('/api/share', { method: 'POST', body: JSON.stringify(payload) }, 20000);
+}
+
+export function adminCall(password, body) {
+  return request('/api/admin', { method: 'POST', body: JSON.stringify(body), headers: { 'x-admin-password': password } }, 25000);
+}

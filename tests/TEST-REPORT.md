@@ -1,5 +1,5 @@
-# Báo cáo kiểm thử v1.1.0 (26/10/2026)
+# Báo cáo kiểm thử v1.2.0 (27/10/2026)
 
-- Máy chủ (node tests/run.js): 23/23 đạt (thêm A-13..A-18: lỗi 400, JSON hỏng, văn bản thường, tạm bỏ model lỗi, dịch vụ dự phòng, /api/health).
-- Giao diện (tests/e2e.py, Playwright, API giả lập): 35/35 đạt.
-- Chưa kiểm chứng: Gemini/Groq thật, Apps Script thật, micro trên thiết bị thật.
+- Máy chủ (node tests/run.js): 26/26 đạt (thêm C-01..C-03: /api/share, /api/admin).
+- Giao diện (tests/e2e.py, Playwright, API giả lập): 38/38 đạt (thêm SH-01..SH-03).
+- Chưa kiểm chứng: Apps Script mới thật (share/adminList/adminUpdate/adminDelete), Gemini/Groq thật, micro trên thiết bị thật.

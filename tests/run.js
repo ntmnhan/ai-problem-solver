@@ -272,6 +272,57 @@ function gemini(obj, extra = {}) {
     assert(!res.body.includes('SECRET-KEY'));
   });
 
+  await t('C-01', '/api/share: cần đồng ý, ghi bản ghi đã chuẩn hóa, tự tính rủi ro, giữ nguyên tên trường', async () => {
+    process.env.APPS_SCRIPT_URL = 'https://script.example/x';
+    process.env.APPS_SCRIPT_TOKEN = 'tok';
+    const share = require('../api/share');
+    const sent = [];
+    global.fetch = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; };
+    let res = mockRes();
+    await share(mockReq({ id: 'pb_abc123', problem: 'x' }), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.json.error, 'no_consent');
+    res = mockRes();
+    await share(mockReq({ consent: true, id: 'pb_abc123', name: 'A', cls: '6/6', school: 'THCS', category: 'Bậy', problem: 'Em bị bạo lực ở nhà', satisfaction: 9 }), res);
+    assert.strictEqual(res.statusCode, 200);
+    const rec = sent[0].record;
+    assert.strictEqual(sent[0].action, 'share');
+    assert.strictEqual(rec.risk, 'concern');
+    assert.strictEqual(rec.category, 'Khác');
+    assert.strictEqual(rec.satisfaction, 5);
+    res = mockRes();
+    await share(mockReq({ consent: true, id: '../x', problem: 'a' }), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  await t('C-02', '/api/share: kho lưu trữ lỗi thì báo 502, không báo đã gửi', async () => {
+    const share = require('../api/share');
+    global.fetch = async () => { throw new Error('down'); };
+    const res = mockRes();
+    await share(mockReq({ consent: true, id: 'pb_abc123', problem: 'a' }), res);
+    assert.strictEqual(res.statusCode, 502);
+  });
+
+  await t('C-03', '/api/admin: sai mật khẩu 401, đúng thì list/update/delete; thiếu cấu hình 503; khóa khi sai nhiều', async () => {
+    const admin = require('../api/admin');
+    const call = async (pw, body, ip) => { const r = mockReq(body); r.headers['x-admin-password'] = pw; if (ip) r.headers['x-forwarded-for'] = ip; const res = mockRes(); await admin(r, res); return res; };
+    delete process.env.ADMIN_PASSWORD;
+    assert.strictEqual((await call('x', { action: 'list' })).statusCode, 503);
+    process.env.ADMIN_PASSWORD = 'matkhau';
+    const bodies = [];
+    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: [] }) }; };
+    assert.strictEqual((await call('sai', { action: 'list' }, '9.9.9.1')).statusCode, 401);
+    assert.strictEqual(bodies.length, 0);
+    assert.strictEqual((await call('matkhau', { action: 'list' }, '9.9.9.2')).statusCode, 200);
+    assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Đang hỗ trợ', note: 'ok' }, '9.9.9.2')).statusCode, 200);
+    assert.strictEqual(bodies[1].action, 'adminUpdate');
+    assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Lạ' }, '9.9.9.2')).statusCode, 400);
+    assert.strictEqual((await call('matkhau', { action: 'delete', id: 'pb_abc123' }, '9.9.9.2')).statusCode, 200);
+    for (let i = 0; i < 8; i++) await call('sai', { action: 'list' }, '9.9.9.3');
+    assert.strictEqual((await call('matkhau', { action: 'list' }, '9.9.9.3')).statusCode, 429);
+    delete process.env.ADMIN_PASSWORD;
+  });
+
   global.fetch = origFetch;
   let failed = 0;
   results.forEach((r) => { console.log(`${r.ok ? 'ĐẠT      ' : 'KHÔNG ĐẠT'}  ${r.id}  ${r.name}${r.ok ? '' : '  -> ' + r.err}`); if (!r.ok) failed++; });

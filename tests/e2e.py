@@ -10,12 +10,16 @@ os.makedirs(OUT, exist_ok=True)
 results = []
 
 STATS = {'configured': True, 'visits': 41, 'ratingCount': 0, 'ratingAvg': None}
-calls = {'visit': 0, 'feedback': [], 'chat': []}
+calls = {'visit': 0, 'feedback': [], 'chat': [], 'share': [], 'admin': []}
+ADMIN_DB = []
 
 def reset_calls():
     calls['visit'] = 0
     calls['feedback'] = []
     calls['chat'] = []
+    calls['share'] = []
+    calls['admin'] = []
+    ADMIN_DB.clear()
 
 ONLY = [x for x in os.environ.get('ONLY', '').split(',') if x]
 
@@ -87,6 +91,31 @@ def install_routes(ctx, chat_mode='ok', stats=None):
         out['task'] = task
         route.fulfill(status=200, content_type='application/json', body=json.dumps(out))
     ctx.route('**/api/chat', api_chat)
+
+    def api_share(route, request):
+        d = json.loads(request.post_data)
+        calls['share'].append(d)
+        if state.get('share_fail'):
+            return route.fulfill(status=502, content_type='application/json', body=json.dumps({'error': 'save_failed', 'message': 'Chưa gửi được. Em thử lại sau nhé.'}))
+        ADMIN_DB.append({'id': d['id'], 'name': d.get('name', ''), 'cls': d.get('cls', ''), 'school': d.get('school', ''), 'category': d.get('category') or 'Khác', 'title': d.get('title', ''), 'problem': d.get('problem', ''), 'final': d.get('final', ''), 'risk': 'concern' if 'bạo lực' in d.get('problem', '') else 'none', 'status': 'Mới', 'note': '', 'sentAt': 1790000000000, 'updatedAt': 1790000000000, 'stepsDone': d.get('stepsDone', 0)})
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'at': 1790000000000}))
+    ctx.route('**/api/share', api_share)
+
+    def api_admin(route, request):
+        d = json.loads(request.post_data)
+        calls['admin'].append(d)
+        if request.headers.get('x-admin-password') != 'matkhau':
+            return route.fulfill(status=401, content_type='application/json', body=json.dumps({'error': 'unauthorized', 'message': 'Mật khẩu chưa đúng.'}))
+        if d['action'] == 'list':
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'items': list(ADMIN_DB)}))
+        for it in list(ADMIN_DB):
+            if it['id'] == d.get('id'):
+                if d['action'] == 'update':
+                    it['status'] = d['status']; it['note'] = d['note']
+                if d['action'] == 'delete':
+                    ADMIN_DB.remove(it)
+        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True}))
+    ctx.route('**/api/admin', api_admin)
     return state
 
 def new_page(browser, viewport=(390, 844), chat_mode='ok', stats=None, init_scripts=(), **ctx_kwargs):
@@ -254,7 +283,7 @@ def run():
             ctx.close()
         record('FL-03', 'Hoàn thành bước cần nội dung + hộp xác nhận; hủy thì không hoàn thành; xác nhận mới sang Bước 2', t_confirm_gate)
 
-        def full_flow(page):
+        def full_flow_to_share(page):
             start_anon(page)
             new_problem(page)
             page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Em cãi nhau với bạn thân')
@@ -311,11 +340,15 @@ def run():
             # Bước 6
             expect(page).to_have_url(re.compile(r'/6$'))
             page.get_by_label('Kết quả thực tế là gì?').fill('Bạn đã đồng ý nói chuyện')
-            sub(page, 2, 4)
+            sub(page, 2, 5)
             expect(page.get_by_text('Mục tiêu ban đầu: Làm hòa với bạn')).to_be_visible()
-            sub(page, 4, 4)
+            sub(page, 4, 5)
             page.get_by_role('button', name='4', exact=True).click()
             page.get_by_label('Kết luận cuối cùng của em').fill('Nói chuyện thẳng thắn hiệu quả')
+            page.get_by_role('button', name='Tiếp', exact=True).click()
+
+        def full_flow(page):
+            full_flow_to_share(page)
             confirm_step(page)
             expect(page).to_have_url(re.compile(r'#/result/'))
 
@@ -634,9 +667,77 @@ def run():
             assert calls['visit'] == 1, f'bộ đếm không được tăng khi chuyển trang/tải lại trong cùng phiên (={calls["visit"]})'
             expect(page.get_by_text('Chưa có dữ liệu đánh giá')).to_be_visible()
             expect(page.get_by_text(re.compile(r'Phiên bản \d+\.\d+\.\d+'))).to_be_visible()
-            expect(page.get_by_text(re.compile('Cập nhật 26/10/2026'))).to_be_visible()
+            expect(page.get_by_text(re.compile('Cập nhật 27/10/2026'))).to_be_visible()
             ctx.close()
         record('CT-01', 'Bộ đếm: tăng đúng 1 lần/phiên, không tăng khi chuyển bước/tải lại; "Chưa có dữ liệu đánh giá" khi rỗng; có phiên bản + ngày', t_counter)
+
+        # ---------- Gửi cho thầy cô + quản trị ----------
+        def t_share_and_admin():
+            reset_calls()
+            ctx, page = new_page(browser)
+            full_flow_to_share(page)
+            expect(page.get_by_text('Em có muốn nhờ thầy cô đồng hành thêm không?')).to_be_visible()
+            send = page.locator('#sh-send')
+            expect(send).to_be_disabled()
+            page.locator('#sh-name').fill('Nguyễn Văn A')
+            page.locator('#sh-cls').fill('6/6')
+            page.locator('#sh-school').fill('THCS Gò Vấp')
+            assert not calls['share'], 'chưa tick đồng ý thì không được gửi gì'
+            page.locator('#sh-ok').check()
+            send.click()
+            expect(page.get_by_text('Đã gửi cho thầy cô lúc')).to_be_visible()
+            sh = calls['share'][-1]
+            assert sh['consent'] is True and sh['name'] == 'Nguyễn Văn A' and sh['cls'] == '6/6' and sh['school'] == 'THCS Gò Vấp'
+            assert 'messages' not in sh and 'chat' not in json.dumps(sh).lower(), 'không được gửi hội thoại AI'
+            assert sh['problem'] and sh['final']
+            page.locator('#finish-step').click()
+            page.get_by_role('button', name='Đã xong', exact=True).click()
+            expect(page).to_have_url(re.compile(r'#/result/'))
+            # Quản trị
+            page.goto(BASE + '/#/admin')
+            page.locator('#ad-pass').fill('sai')
+            page.get_by_role('button', name='Đăng nhập').click()
+            expect(page.get_by_text('Mật khẩu chưa đúng')).to_be_visible()
+            page.locator('#ad-pass').fill('matkhau')
+            page.get_by_role('button', name='Đăng nhập').click()
+            expect(page.get_by_text('Vấn đề học sinh đã gửi')).to_be_visible()
+            expect(page.get_by_text('Nguyễn Văn A')).to_be_visible()
+            page.locator('.ad-row').first.click()
+            page.locator('#ad-status').select_option('Đang hỗ trợ')
+            page.locator('#ad-note').fill('Đã hẹn gặp em')
+            page.get_by_role('button', name='Lưu', exact=True).click()
+            expect(page.locator('.ad-row .tag.st-1')).to_be_visible()
+            assert ADMIN_DB[0]['status'] == 'Đang hỗ trợ' and ADMIN_DB[0]['note'] == 'Đã hẹn gặp em'
+            with page.expect_download() as dl:
+                page.get_by_role('button', name=re.compile('Tải CSV')).click()
+            assert dl.value.suggested_filename.endswith('.csv')
+            ctx.close()
+        record('SH-01', 'Gửi cho thầy cô: cần tick đồng ý, không gửi hội thoại AI; admin đăng nhập, xem, đổi trạng thái/ghi chú, xuất CSV', t_share_and_admin)
+
+        def t_share_fail_and_skip():
+            reset_calls()
+            ctx, page = new_page(browser)
+            page.state['share_fail'] = True
+            full_flow_to_share(page)
+            page.locator('#sh-ok').check()
+            page.locator('#sh-send').click()
+            expect(page.get_by_text('Chưa gửi được')).to_be_visible()
+            expect(page.get_by_text('Đã gửi cho thầy cô lúc')).to_have_count(0)
+            # Không gửi vẫn hoàn thành được
+            page.locator('#finish-step').click()
+            page.get_by_role('button', name='Đã xong', exact=True).click()
+            expect(page).to_have_url(re.compile(r'#/result/'))
+            assert not ADMIN_DB
+            ctx.close()
+        record('SH-02', 'Gửi thất bại báo thật, không báo đã gửi; bỏ qua việc gửi vẫn hoàn thành bước 6', t_share_fail_and_skip)
+
+        def t_admin_unconfigured_screen():
+            ctx, page = new_page(browser)
+            page.goto(BASE + '/#/admin')
+            expect(page.locator('#ad-pass')).to_be_visible()
+            assert 'overflow' not in (page.evaluate("document.body.className") or '')
+            ctx.close()
+        record('SH-03', 'Trang quản trị mở được khi chưa có hồ sơ học sinh và hiện ô mật khẩu', t_admin_unconfigured_screen)
 
         def t_counter_unconfigured():
             ctx, page = new_page(browser, stats={'configured': False})

@@ -3,8 +3,8 @@ export const CONFIG = {
   name: 'AI Problem Solver',
   tagline: 'Trợ lý giải quyết vấn đề thực tiễn',
   slogan: 'AI hỗ trợ tư duy, không thay thế quyết định của học sinh.',
-  version: '1.1.0',
-  releaseDate: '26/10/2026',
+  version: '1.2.0',
+  releaseDate: '27/10/2026',
   // Điền địa chỉ chính thức (https://...) nếu muốn cố định URL của mã QR.
   // Để trống: dùng địa chỉ đang mở nếu là https và không phải localhost.
   siteUrl: '',

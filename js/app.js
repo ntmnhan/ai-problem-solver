@@ -11,6 +11,7 @@ import * as problem from './views/problem.js';
 import * as result from './views/result.js';
 import * as library from './views/library.js';
 import * as qr from './views/qr.js';
+import * as admin from './views/admin.js';
 import * as info from './views/info.js';
 
 store.load();
@@ -146,7 +147,7 @@ function renderFooter() {
         h('span', { class: 'ver' }, h('span', { class: 't-long' }, 'Phiên bản '), h('span', { class: 't-short' }), CONFIG.version)),
       h('div', { class: 'footer-row f-extra muted small' },
         h('span', null, `${CONFIG.name} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : ''),
-        h('span', null, h('a', { href: '#/privacy' }, 'Quyền riêng tư'), ' · ', h('a', { href: '#/about' }, 'Giới thiệu'))),
+        h('span', null, h('a', { href: '#/privacy' }, 'Quyền riêng tư'), ' · ', h('a', { href: '#/about' }, 'Giới thiệu'), ' · ', h('a', { href: '#/admin' }, 'Dành cho thầy cô'))),
       h('div', { class: 'f-extra muted small' }, CONFIG.slogan)
     )
   );
@@ -244,7 +245,7 @@ function route() {
   const parts = parse();
   const page = parts[0] || '';
   const hasProfile = !!store.getProfile();
-  const publicPages = ['start', 'privacy', 'about'];
+  const publicPages = ['start', 'privacy', 'about', 'admin'];
 
   if (!page) { location.replace(hasProfile ? '#/home' : '#/start'); return; }
   if (!hasProfile && !publicPages.includes(page)) { location.replace('#/start'); return; }
@@ -259,6 +260,7 @@ function route() {
     else if (page === 'result') res = result.render(appEl, { id: parts[1] });
     else if (page === 'library') res = library.render(appEl);
     else if (page === 'qr') res = qr.render(appEl);
+    else if (page === 'admin') res = admin.render(appEl);
     else if (page === 'privacy') res = info.renderPrivacy(appEl);
     else if (page === 'about') res = info.renderAbout(appEl);
     else appEl.appendChild(h('div', { class: 'card empty' }, icon('alert', 32), h('h2', null, 'Không tìm thấy trang'), h('a', { class: 'btn btn-primary', href: '#/home' }, 'Về trang chủ')));

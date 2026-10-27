@@ -181,6 +181,13 @@ export function createProblem() {
   return p;
 }
 
+export function markShared(id, info) {
+  const p = getProblem(id);
+  if (!p) return;
+  p.shared = info || null;
+  saveNow();
+}
+
 export function deleteProblem(id) {
   const s = get();
   s.problems = s.problems.filter((p) => p.id !== id);

@@ -46,7 +46,7 @@ export function render(root) {
       h('ol', { class: 'steps-preview', 'aria-label': 'Sáu bước' },
         STEPS.map((s) => h('li', null, badge(STEP_ICON[s.n - 1], STEP_COLOR[s.n - 1], 40), h('span', null, s.short)))),
       h('p', { class: 'start-note' }, icon('shield', 16),
-        h('span', null, 'Dữ liệu chỉ lưu trên máy em. Khi trò chuyện với AI, em đừng ghi họ tên, số điện thoại hay địa chỉ nhé.')),
+        h('span', null, 'Dữ liệu lưu trên máy em; chỉ gửi cho thầy cô khi em đồng ý. Khi trò chuyện với AI, em đừng ghi họ tên, số điện thoại hay địa chỉ nhé.')),
       h('div', { class: 'start-links' },
         h('button', { type: 'button', class: 'link-btn', onClick: () => pickRestoreFile(() => { if (store.getProfile()) go(); else toast('Tệp không có thông tin hồ sơ, em hãy nhập thông tin ở trên nhé.'); }) }, 'Khôi phục từ tệp sao lưu'),
         h('a', { href: '#/privacy' }, 'Quyền riêng tư'),

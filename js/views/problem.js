@@ -7,6 +7,7 @@ import { askAI, shareProblem } from '../api.js';
 import { detectRisk } from '../safety.js';
 import { owl, badge, STEP_ICON, STEP_COLOR, CAT_ICON, CAT_COLOR } from '../art.js';
 import { voiceInput } from '../voiceui.js';
+import { playSfx, sfxOn, setSfx } from '../sound.js';
 import { h, icon, btn, clear, autoGrow, toast, modal, confirmDialog, promptDialog, safetyCard } from '../ui.js';
 
 const FEAS = ['Rất khó', 'Khó', 'Vừa', 'Dễ', 'Rất dễ'];
@@ -51,6 +52,14 @@ export function render(root, params) {
   const dotsEl = h('div', { class: 'wz-dots' });
   const riskEl = h('div', { class: 'wz-risk hidden', role: 'note' });
   const actionsEl = h('div', { class: 'wz-actions' });
+  const sfxBtn = h('button', { type: 'button', id: 'sfx-btn', class: 'icon-btn', title: 'Âm thanh khi chuyển bước' }, icon('spark', 18));
+  const drawSfx = () => { sfxBtn.setAttribute('aria-pressed', sfxOn() ? 'true' : 'false'); sfxBtn.setAttribute('aria-label', sfxOn() ? 'Tắt âm thanh chuyển bước' : 'Bật âm thanh chuyển bước'); sfxBtn.classList.toggle('off', !sfxOn()); };
+  sfxBtn.addEventListener('click', () => { setSfx(!sfxOn()); drawSfx(); if (sfxOn()) playSfx('step'); });
+  drawSfx();
+  const AUTO_KEY = 'aips_autoread';
+  const autoRead = () => { try { return localStorage.getItem(AUTO_KEY) !== '0'; } catch (e) { return true; } };
+  let lastKey = '';
+  let reading = false;
 
   root.appendChild(
     h('div', { class: 'wz' },
@@ -64,6 +73,7 @@ export function render(root, params) {
             if (v) { store.renameProblem(id, v); titleEl.textContent = P().title; }
           }
         }, icon('edit', 18)),
+        sfxBtn,
         h('a', { class: 'icon-btn', href: `#/result/${id}`, 'aria-label': 'Trang kết quả', title: 'Trang kết quả' }, icon('file', 18))
       ),
       stepperEl,
@@ -283,6 +293,8 @@ export function render(root, params) {
   }
   const pickedSols = () => P().data.solutions.filter((s) => s.picked && s.text.trim());
 
+  const clean = (t) => String(t || '').split('\n').map((l) => l.replace(/^\s*[-•*]\s*/, '').trim()).filter(Boolean).map((l) => (/[.!?…]$/.test(l) ? l : l + '.')).join(' ');
+
   function pagesStep2() {
     return [
       { q: 'Theo em, nguyên nhân của vấn đề này là gì?', hint: 'Em nghĩ vì sao chuyện này xảy ra? Đoán cũng được.', mood: 'think', render: () => textField({ label: 'Nguyên nhân em nghĩ là…', key: 'cause', placeholder: 'Em nghĩ là vì…' }) },
@@ -296,6 +308,7 @@ export function render(root, params) {
     if (fail.suggest && !P().data.solutions.length) return errorPage('Chưa nghĩ ra được biện pháp', () => fetchSuggest());
     return [{
       q: 'Em chọn biện pháp nào?', hint: 'Chạm để chọn một hoặc nhiều cách, hoặc tự thêm cách của em.', mood: 'happy',
+      speak: () => 'Em chọn biện pháp nào? Mình gợi ý các cách sau. ' + P().data.solutions.map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em chạm vào cách em thích để chọn nhé.',
       render: () => {
         const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Các biện pháp' });
         const hint = h('p', { class: 'wz-hint' });
@@ -355,6 +368,10 @@ export function render(root, params) {
     if (busy.analyze) return loadingPage('Mình đang phân tích từng biện pháp…');
     const pages = sols.map((s, i) => ({
       q: `Cách ${i + 1}: ${s.text}`, hint: 'Đây là gợi ý của mình, em có thể sửa lại cho đúng ý em.', mood: 'think', qclass: 'long',
+      speak: () => {
+        const a = P().data.analysis[s.id] || {};
+        return `Cách ${i + 1}: ${s.text}. ` + (a.pros ? `Ưu điểm: ${clean(a.pros)} ` : '') + (a.cons ? `Hạn chế: ${clean(a.cons)}` : '');
+      },
       render: () => h('div', { class: 'col grow' },
         areaOf(s.id, 'pros', 'Ưu điểm', 'Cách này tốt ở chỗ…'),
         areaOf(s.id, 'cons', 'Hạn chế', 'Cách này khó ở chỗ…'),
@@ -362,6 +379,7 @@ export function render(root, params) {
     }));
     pages.push({
       q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em.', mood: 'cheer',
+      speak: () => 'Em quyết định chọn cách nào? ' + pickedSols().map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em là người quyết định, mình không chọn thay em.',
       render: () => {
         const listEl = h('div', { class: 'pick-list', role: 'group', 'aria-label': 'Chọn một biện pháp' });
         const draw = () => {
@@ -398,6 +416,7 @@ export function render(root, params) {
     if (busy.plan) return loadingPage('Mình đang soạn các việc cần làm…');
     const overview = {
       q: 'Các việc cần làm theo thứ tự', hint: 'Bấm Tiếp để xem hướng dẫn chi tiết từng việc.', mood: 'cheer',
+      speak: () => `Cách em chọn: ${chosen.text}. Các việc cần làm theo thứ tự. ` + P().data.plan.map((t, i) => `Việc ${i + 1}: ${t.text}${t.time ? ', khoảng ' + t.time : ''}.`).join(' '),
       render: () => {
         const listEl = h('ol', { class: 'plan-ov' });
         const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Thêm việc của em (không bắt buộc)', 'aria-label': 'Thêm việc' });
@@ -424,6 +443,7 @@ export function render(root, params) {
     const pages = [overview];
     P().data.plan.forEach((t, i) => pages.push({
       q: `Việc ${i + 1}: ${t.text}`, hint: t.time ? `Thời gian dự kiến: ${t.time}` : '', mood: 'happy', qclass: 'long',
+      speak: () => `Việc ${i + 1}: ${t.text}. ` + (t.detail ? `Cách làm: ${clean(t.detail)} ` : '') + (t.resource ? `Cần: ${t.resource}.` : '') + (t.time ? ` Thời gian dự kiến: ${t.time}.` : ''),
       render: () => {
         const stat = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Tình trạng việc này' });
         const drawStat = () => {
@@ -748,6 +768,20 @@ export function render(root, params) {
     pageList = [pageStep1, pagesStep2, pageStep3, pagesStep4, pagesStep5, pagesStep6][n - 1]();
   }
 
+  let syncListen = () => {};
+  function readTools(pg) {
+    const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', null, 'Nghe'));
+    const cb = h('input', { type: 'checkbox', id: 'auto-read' });
+    cb.checked = autoRead();
+    cb.addEventListener('change', () => { try { localStorage.setItem(AUTO_KEY, cb.checked ? '1' : '0'); } catch (e) { /* bỏ qua */ } if (!cb.checked) voice.stopSpeaking(); });
+    syncListen = () => { lb.querySelector('span').textContent = reading ? 'Dừng' : 'Nghe'; lb.classList.toggle('on', reading); };
+    lb.addEventListener('click', () => {
+      if (reading) { voice.stopSpeaking(); reading = false; syncListen(); return; }
+      voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); });
+    });
+    return h('div', { class: 'qtools' }, lb, h('label', { class: 'auto-read' }, cb, h('span', null, 'Tự đọc')));
+  }
+
   function goPage(i) {
     buildPages();
     sub = Math.max(0, Math.min(i, pageList.length - 1));
@@ -757,8 +791,17 @@ export function render(root, params) {
       owl({ size: 56, mood: pg.mood || 'happy' }),
       h('div', { class: `bubble ${pg.qclass || ''}` },
         h('div', { class: 'qs' }, h('span', { class: 'qstep', style: `background:${STEP_COLOR[n - 1]}` }, `Bước ${n}`), pg.q),
-        pg.hint ? h('div', { class: 'qh' }, pg.hint) : null)
+        pg.hint ? h('div', { class: 'qh' }, pg.hint) : null,
+        pg.speak && voice.supportsTTS ? readTools(pg) : null)
     );
+    const key = `${n}:${sub}:${pg.q}`;
+    if (key !== lastKey) {
+      const first = lastKey === '';
+      lastKey = key;
+      playSfx(first ? 'step' : 'page');
+      voice.stopSpeaking();
+      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); }); }, 450);
+    }
     clear(mainEl);
     mainEl.appendChild(pg.render());
     clear(dotsEl);

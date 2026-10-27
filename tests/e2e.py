@@ -866,6 +866,31 @@ def run():
         window.SpeechSynthesisUtterance = function(t){ this.text = t; };
         Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{ speak(u){ window.__ttsSpoken.push(u.text); setTimeout(()=>u.onstart&&u.onstart(),10); setTimeout(()=>u.onend&&u.onend(),3000); }, cancel(){}, getVoices(){ return []; }, onvoiceschanged:null }});
         """
+        def t_read_aloud_sfx():
+            ctx, page = new_page(browser, init_scripts=[FAKE_SR])
+            start_anon(page)
+            new_problem(page)
+            page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('X')
+            confirm_step(page)
+            page.get_by_label('Nguyên nhân em nghĩ là…').fill('Y')
+            sub(page, 2, 2)
+            page.get_by_label('Kết quả em mong muốn là…').fill('Z')
+            confirm_step(page)
+            expect(page.locator('.pick-row')).to_have_count(3)
+            page.wait_for_function('window.__ttsSpoken.length >= 1', timeout=15000)
+            first = page.evaluate('window.__ttsSpoken[0]')
+            assert 'Cách 1' in first and 'Em chọn biện pháp nào' in first, first
+            n0 = page.evaluate('window.__ttsSpoken.length')
+            page.locator('.listen-btn').click()
+            page.wait_for_function(f'window.__ttsSpoken.length > {n0}', timeout=15000)
+            page.locator('#auto-read').uncheck()
+            assert page.evaluate("localStorage.getItem('aips_autoread')") == '0'
+            page.locator('#sfx-btn').click()
+            assert page.evaluate("localStorage.getItem('aips_sfx')") == '0'
+            expect(page.locator('#sfx-btn')).to_have_attribute('aria-pressed', 'false')
+            ctx.close()
+        record('SD-01', 'Bước 3: AI tự đọc các biện pháp, có nút Nghe, tắt được Tự đọc; có nút bật/tắt âm thanh chuyển bước', t_read_aloud_sfx)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)

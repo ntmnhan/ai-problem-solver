@@ -110,6 +110,10 @@ tests/              Kiểm thử + báo cáo
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
 
+## Phiên bản 12 — Nghe đọc nội dung và âm thanh
+- Bước 3, 4, 5: trợ lý tự đọc nội dung (giọng tiếng Việt của trình duyệt); có nút Nghe/Dừng và ô Tự đọc.
+- Âm thanh nhẹ khi chuyển câu/bước; nút bật/tắt ở thanh trên cùng.
+
 ## Phiên bản 11 — Hướng dẫn sử dụng gộp, Admin lên góc phải
 - Gộp Giới thiệu + Quyền riêng tư thành trang "Hướng dẫn sử dụng"; liên kết Hướng dẫn và Admin nằm cạnh nút Mục lục.
 - Chân trang hiển thị phiên bản là số tự nhiên (11, 12, 13…).

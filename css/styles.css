@@ -659,3 +659,11 @@ body.wiz #toasts { top: 64px; bottom: auto; }
   .brand span { display: none; }
   .header-in { gap: 6px; }
 }
+
+/* v12: nghe đọc nội dung + âm thanh chuyển bước */
+.qtools { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.listen-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 14px; font-weight: 700; background: var(--primary-soft, #e8f0ff); color: var(--primary); border: 1px solid var(--primary); cursor: pointer; }
+.listen-btn.on { background: var(--primary); color: #fff; }
+.auto-read { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted, #667); cursor: pointer; }
+.auto-read input { width: 18px; height: 18px; }
+#sfx-btn.off { opacity: 0.5; }

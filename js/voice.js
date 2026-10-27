@@ -80,11 +80,18 @@ export function isListening() {
 }
 
 let voiceCache = null;
+const isVi = (v) => /^vi([-_]|$)/i.test(v.lang || '') || /vietnam|tiếng việt/i.test(v.name || '');
+// Chọn giọng tiếng Việt (ưu tiên giọng chất lượng cao). Không lưu cache khi chưa có danh sách giọng.
 function pickVoice() {
   if (voiceCache) return voiceCache;
   const voices = window.speechSynthesis.getVoices() || [];
-  voiceCache = voices.find((v) => /^vi/i.test(v.lang)) || null;
+  const vi = voices.filter(isVi);
+  voiceCache = vi.find((v) => /google|natural|online|hoaimy|namminh/i.test(v.name)) || vi[0] || null;
   return voiceCache;
+}
+export function hasViVoice() {
+  const voices = window.speechSynthesis.getVoices() || [];
+  return voices.length === 0 ? null : voices.some(isVi); // null: chưa biết (danh sách giọng chưa tải)
 }
 
 // onState('speaking'|'stopped')
@@ -94,6 +101,7 @@ export function speak(text, onState) {
     return false;
   }
   if (listening) { onState && onState('stopped'); return false; } // đang ghi âm thì không đọc, tránh tự thu tiếng loa
+  if (hasViVoice() === false) { onState && onState('novoice'); return false; } // không đọc bằng giọng tiếng Anh
   stopSpeaking();
   const u = new SpeechSynthesisUtterance(String(text).slice(0, 1500));
   u.lang = 'vi-VN';

@@ -769,6 +769,12 @@ export function render(root, params) {
   }
 
   let syncListen = () => {};
+  let warnedNoVoice = false;
+  function noViVoice() {
+    if (warnedNoVoice) return;
+    warnedNoVoice = true;
+    toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Em thêm giọng Tiếng Việt trong Cài đặt > Ngôn ngữ > Chuyển văn bản thành giọng nói nhé.', 'info', 9000);
+  }
   function readTools(pg) {
     const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', null, 'Nghe'));
     const cb = h('input', { type: 'checkbox', id: 'auto-read' });
@@ -777,7 +783,7 @@ export function render(root, params) {
     syncListen = () => { lb.querySelector('span').textContent = reading ? 'Dừng' : 'Nghe'; lb.classList.toggle('on', reading); };
     lb.addEventListener('click', () => {
       if (reading) { voice.stopSpeaking(); reading = false; syncListen(); return; }
-      voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); });
+      voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); if (st === 'novoice') noViVoice(); });
     });
     return h('div', { class: 'qtools' }, lb, h('label', { class: 'auto-read' }, cb, h('span', null, 'Tự đọc')));
   }
@@ -800,7 +806,7 @@ export function render(root, params) {
       lastKey = key;
       playSfx(first ? 'step' : 'page');
       voice.stopSpeaking();
-      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key && !voice.isListening()) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); }); }, 450);
+      if (pg.speak && voice.supportsTTS && autoRead()) setTimeout(() => { if (alive && lastKey === key && !voice.isListening()) voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); if (st === 'novoice') noViVoice(); }); }, 450);
     }
     clear(mainEl);
     mainEl.appendChild(pg.render());

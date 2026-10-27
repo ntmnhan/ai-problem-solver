@@ -906,6 +906,24 @@ def run():
             ctx.close()
         record('VO-05', 'Thanh giọng nói không hiện chữ "null" (kể cả chỗ Nói tiếp)', t_voice_no_null)
 
+        def t_no_english_voice():
+            en_only = FAKE_SR.replace("getVoices(){ return []; }", "getVoices(){ return [{lang:'en-US',name:'Samantha'}]; }")
+            assert en_only != FAKE_SR
+            ctx, page = new_page(browser, init_scripts=[en_only])
+            start_anon(page)
+            new_problem(page)
+            page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('X')
+            confirm_step(page)
+            page.get_by_label('Nguyên nhân em nghĩ là…').fill('Y')
+            sub(page, 2, 2)
+            page.get_by_label('Kết quả em mong muốn là…').fill('Z')
+            confirm_step(page)
+            expect(page.locator('.pick-row')).to_have_count(3)
+            expect(page.get_by_text('chưa có giọng đọc tiếng Việt')).to_be_visible(timeout=8000)
+            assert page.evaluate('window.__ttsSpoken.length') == 0, 'không được đọc bằng giọng tiếng Anh'
+            ctx.close()
+        record('SD-02', 'Máy không có giọng tiếng Việt: không đọc bằng giọng tiếng Anh, có thông báo hướng dẫn', t_no_english_voice)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)

@@ -74,8 +74,7 @@ function renderHeader() {
     hasProfile ? menuItem('Tải bản sao lưu', 'download', downloadBackup) : null,
     menuItem('Khôi phục từ tệp', 'upload', () => pickRestoreFile(() => route())),
     h('hr'),
-    menuItem('Quyền riêng tư và dữ liệu', 'shield', null, { href: '#/privacy', cls: currentPath === 'privacy' ? 'active' : '' }),
-    menuItem('Giới thiệu', 'info', null, { href: '#/about', cls: currentPath === 'about' ? 'active' : '' }),
+    menuItem('Hướng dẫn sử dụng', 'info', null, { href: '#/guide', cls: currentPath === 'guide' ? 'active' : '' }),
     hasProfile ? h('hr') : null,
     hasProfile ? menuItem('Xóa toàn bộ dữ liệu', 'trash', () => deleteEverything(() => { location.hash = '#/start'; route(); }), { cls: 'danger' }) : null
   );
@@ -86,6 +85,8 @@ function renderHeader() {
       h('span', { class: 'header-spacer' }),
       saveChip(),
       h('button', { type: 'button', class: 'icon-btn', id: 'theme-btn', 'aria-label': currentTheme() === 'dark' ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối', title: 'Sáng / tối', onClick: toggleTheme }, icon(currentTheme() === 'dark' ? 'sun' : 'moon', 20)),
+      h('a', { class: `hdr-link ${currentPath === 'guide' ? 'active' : ''}`, id: 'guide-link', href: '#/guide', title: 'Hướng dẫn sử dụng', 'aria-label': 'Hướng dẫn sử dụng' }, icon('info', 20), h('span', null, 'Hướng dẫn')),
+      h('a', { class: `hdr-link ${currentPath === 'admin' ? 'active' : ''}`, id: 'admin-link', href: '#/admin', title: 'Dành cho thầy cô (Admin)', 'aria-label': 'Admin - dành cho thầy cô' }, icon('lock', 20), h('span', null, 'Admin')),
       h('div', { class: 'menu-wrap' },
         h('button', {
           type: 'button', class: 'icon-btn', id: 'menu-btn', 'aria-label': 'Mở menu', 'aria-haspopup': 'menu', 'aria-expanded': menuOpen ? 'true' : 'false', 'aria-controls': 'main-menu',
@@ -147,7 +148,7 @@ function renderFooter() {
         h('span', { class: 'ver' }, h('span', { class: 't-long' }, 'Phiên bản '), h('span', { class: 't-short' }), CONFIG.version)),
       h('div', { class: 'footer-row f-extra muted small' },
         h('span', null, `${CONFIG.name} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : ''),
-        h('span', null, h('a', { href: '#/privacy' }, 'Quyền riêng tư'), ' · ', h('a', { href: '#/about' }, 'Giới thiệu'), ' · ', h('a', { href: '#/admin' }, 'Dành cho thầy cô'))),
+        h('span', null, CONFIG.teamName || '')),
       h('div', { class: 'f-extra muted small' }, CONFIG.slogan)
     )
   );
@@ -245,8 +246,9 @@ function route() {
   const parts = parse();
   const page = parts[0] || '';
   const hasProfile = !!store.getProfile();
-  const publicPages = ['start', 'privacy', 'about', 'admin'];
+  const publicPages = ['start', 'guide', 'admin'];
 
+  if (page === 'privacy' || page === 'about') { location.replace('#/guide'); return; }
   if (!page) { location.replace(hasProfile ? '#/home' : '#/start'); return; }
   if (!hasProfile && !publicPages.includes(page)) { location.replace('#/start'); return; }
 
@@ -261,8 +263,7 @@ function route() {
     else if (page === 'library') res = library.render(appEl);
     else if (page === 'qr') res = qr.render(appEl);
     else if (page === 'admin') res = admin.render(appEl);
-    else if (page === 'privacy') res = info.renderPrivacy(appEl);
-    else if (page === 'about') res = info.renderAbout(appEl);
+    else if (page === 'guide') res = info.renderGuide(appEl);
     else appEl.appendChild(h('div', { class: 'card empty' }, icon('alert', 32), h('h2', null, 'Không tìm thấy trang'), h('a', { class: 'btn btn-primary', href: '#/home' }, 'Về trang chủ')));
   } catch (e) {
     console.error(e);

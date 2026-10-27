@@ -706,7 +706,7 @@ def run():
             page.wait_for_timeout(500)
             assert calls['visit'] == 1, f'bộ đếm không được tăng khi chuyển trang/tải lại trong cùng phiên (={calls["visit"]})'
             expect(page.get_by_text('Chưa có dữ liệu đánh giá')).to_be_visible()
-            expect(page.get_by_text(re.compile(r'Phiên bản \d+\.\d+\.\d+'))).to_be_visible()
+            expect(page.get_by_text(re.compile(r'Phiên bản \d+'))).to_be_visible()
             expect(page.get_by_text(re.compile('Cập nhật 27/10/2026'))).to_be_visible()
             ctx.close()
         record('CT-01', 'Bộ đếm: tăng đúng 1 lần/phiên, không tăng khi chuyển bước/tải lại; "Chưa có dữ liệu đánh giá" khi rỗng; có phiên bản + ngày', t_counter)
@@ -927,15 +927,39 @@ def run():
             ctx.close()
         record('VO-04', 'Không bật micro khi người dùng chưa chủ động', t_mic_not_asked_on_load)
 
-        # ---------- Quyền riêng tư ----------
-        def t_privacy_page_and_scrub_notice():
+        # ---------- Hướng dẫn sử dụng (gồm quyền riêng tư) + liên kết trên đầu trang ----------
+        def t_guide_page():
             ctx, page = new_page(browser)
-            page.goto(BASE + '/#/privacy')
-            expect(page.get_by_role('heading', name='Quyền riêng tư và dữ liệu')).to_be_visible()
+            page.goto(BASE + '/#/privacy')  # đường dẫn cũ tự chuyển sang trang hướng dẫn
+            expect(page).to_have_url(re.compile(r'#/guide$'))
+            expect(page.get_by_role('heading', name='Hướng dẫn sử dụng', level=1)).to_be_visible()
+            expect(page.get_by_text('Em dùng thế nào? (6 bước)')).to_be_visible()
+            expect(page.get_by_text('Quyền riêng tư: dữ liệu của em nằm ở đâu?')).to_be_visible()
             expect(page.get_by_text('không có tài khoản, mật khẩu')).to_be_visible()
             expect(page.get_by_text('gói miễn phí').first).to_be_visible()
+            expect(page.get_by_text('Cơ sở tham khảo')).to_be_visible()
+            expect(page.get_by_role('heading', name='Thông tin tác giả')).to_be_visible()
             ctx.close()
-        record('PR-03', 'Trang quyền riêng tư nêu rõ dữ liệu lưu ở đâu, gửi gì cho AI, bộ đếm định nghĩa thế nào, cách xóa/xuất', t_privacy_page_and_scrub_notice)
+        record('PR-03', 'Trang Hướng dẫn sử dụng gồm cách dùng 6 bước, quyền riêng tư (dữ liệu, gửi AI, bộ đếm), an toàn, cơ sở tham khảo, tác giả; đường dẫn cũ chuyển về', t_guide_page)
+
+        def t_header_links():
+            for (w, h_) in [(360, 740), (1280, 800)]:
+                ctx, page = new_page(browser, (w, h_))
+                page.goto(BASE + '/')
+                g, a = page.locator('#guide-link'), page.locator('#admin-link')
+                expect(g).to_be_visible(); expect(a).to_be_visible()
+                bg, ba, bm = g.bounding_box(), a.bounding_box(), page.locator('#menu-btn').bounding_box()
+                assert bg['x'] < ba['x'] < bm['x'] and ba['x'] + ba['width'] <= bm['x'] + 1, 'Hướng dẫn, Admin phải nằm ngay cạnh nút menu'
+                assert bm['x'] + bm['width'] <= w + 1
+                no_hscroll(page)
+                expect(page.locator('footer a[href="#/admin"], footer a[href="#/about"], footer a[href="#/privacy"]')).to_have_count(0)
+                g.click()
+                expect(page).to_have_url(re.compile(r'#/guide$'))
+                a.click()
+                expect(page).to_have_url(re.compile(r'#/admin$'))
+                expect(page.locator('#ad-pass')).to_be_visible()
+                ctx.close()
+        record('NV-01', 'Hướng dẫn sử dụng và Admin nằm góc phải trên cùng, kế nút menu; không còn ở chân trang; không tràn ngang (360/1280px)', t_header_links)
 
         def t_no_fake_data():
             ctx, page = new_page(browser, stats={'configured': True, 'visits': 0, 'ratingCount': 0, 'ratingAvg': None})

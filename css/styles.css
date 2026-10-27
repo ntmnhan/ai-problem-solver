@@ -646,3 +646,16 @@ body.wiz #toasts { top: 64px; bottom: auto; }
 .redo-note { text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .redo-note p { margin: 0; }
 .pick-list.grow { max-height: none; flex: 1; min-height: 0; }
+
+/* ===== v1.4: Hướng dẫn / Admin trên thanh đầu trang ===== */
+.hdr-link { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--text); text-decoration: none; font-weight: 600; font-size: 0.88rem; white-space: nowrap; }
+.hdr-link:hover, .hdr-link.active { border-color: var(--primary); color: var(--primary); }
+.how { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.how li { display: flex; gap: 10px; align-items: flex-start; }
+.how p { margin: 2px 0 0; }
+@media (max-width: 640px) {
+  .hdr-link { width: 40px; padding: 0; justify-content: center; }
+  .hdr-link span { display: none; }
+  .brand span { display: none; }
+  .header-in { gap: 6px; }
+}

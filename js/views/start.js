@@ -49,7 +49,7 @@ export function render(root) {
         h('span', null, 'Dữ liệu lưu trên máy em; chỉ gửi cho thầy cô khi em đồng ý. Khi trò chuyện với AI, em đừng ghi họ tên, số điện thoại hay địa chỉ nhé.')),
       h('div', { class: 'start-links' },
         h('button', { type: 'button', class: 'link-btn', onClick: () => pickRestoreFile(() => { if (store.getProfile()) go(); else toast('Tệp không có thông tin hồ sơ, em hãy nhập thông tin ở trên nhé.'); }) }, 'Khôi phục từ tệp sao lưu'),
-        h('a', { href: '#/privacy' }, 'Quyền riêng tư'),
+        h('a', { href: '#/guide' }, 'Hướng dẫn sử dụng'),
         h('a', { href: 'tel:111' }, 'Cần giúp đỡ? Gọi 111'))
     )
   );

@@ -1,14 +1,38 @@
 import { CONFIG, STEPS } from '../config.js';
 import { h, icon, btn } from '../ui.js';
 import { downloadBackup, deleteEverything } from '../actions.js';
+import { owl, badge, STEP_ICON, STEP_COLOR } from '../art.js';
 
-export function renderPrivacy(root) {
+const HOW = [
+  'Em kể vấn đề của mình bằng vài câu (gõ chữ hoặc bấm micro để nói).',
+  'Em cho biết nguyên nhân em nghĩ tới và kết quả em mong muốn.',
+  'Trợ lý gợi ý khoảng 3 biện pháp. Em chọn cách em thấy hợp, hoặc tự thêm cách của em.',
+  'Em xem ưu điểm, hạn chế của từng cách rồi tự quyết định chọn một cách.',
+  'Trợ lý hướng dẫn các việc cần làm theo thứ tự. Làm xong việc nào, em đánh dấu việc đó.',
+  'Em cho biết có hài lòng không (chưa hài lòng thì quay lại Bước 3), cho điểm và viết nhận xét. Em có thể nhờ thầy cô đồng hành thêm nếu em muốn.'
+];
+
+export function renderGuide(root) {
   root.appendChild(
-    h('div', null,
-      h('h1', null, 'Quyền riêng tư và dữ liệu'),
-      h('p', { class: 'muted' }, 'Trình bày đơn giản để em và thầy cô, ba mẹ cùng hiểu.'),
+    h('div', { class: 'guide' },
+      h('div', { class: 'hero', style: 'padding-top:4px' },
+        h('img', { class: 'hero-logo', src: '/assets/logo.svg', alt: 'Logo AI Problem Solver' }),
+        h('h1', null, 'Hướng dẫn sử dụng'), h('p', { class: 'sub' }, `${CONFIG.name} · ${CONFIG.tagline}`), h('p', { class: 'slogan' }, `“${CONFIG.slogan}”`)),
       h('section', { class: 'card' },
-        h('h2', null, 'Dữ liệu của em nằm ở đâu?'),
+        h('h2', null, 'Em dùng thế nào? (6 bước)'),
+        h('ol', { class: 'how' }, STEPS.map((st, i) => h('li', null, badge(STEP_ICON[i], STEP_COLOR[i], 34), h('div', null, h('strong', null, `Bước ${st.n}. ${st.name}`), h('p', null, HOW[i]))))),
+        h('p', null, 'Em là người quyết định. Trợ lý AI chỉ gợi ý; mình không tự chọn thay em và không tự đánh dấu hoàn thành thay em.')
+      ),
+      h('section', { class: 'card' },
+        h('h2', null, 'Mẹo nhỏ'),
+        h('ul', null,
+          h('li', null, 'Mỗi bước là một màn hình. Bấm “Tiếp” để sang câu kế, “Xong bước này” khi em đã hài lòng với bước đó.'),
+          h('li', null, 'Cần hỏi thêm? Bấm “Hỏi trợ lý” (từ Bước 2) để trò chuyện. Em có thể bấm micro để nói.'),
+          h('li', null, 'Em có thể quay lại sửa bước trước; các bước sau sẽ nhắc em xem lại.'),
+          h('li', null, 'Dữ liệu lưu ngay trên máy em. Nên tải bản sao lưu ở menu để không bị mất khi đổi máy.'))
+      ),
+      h('section', { class: 'card' },
+        h('h2', null, 'Quyền riêng tư: dữ liệu của em nằm ở đâu?'),
         h('ul', null,
           h('li', null, 'Hồ sơ (họ tên, lớp nếu em nhập hoặc mã ẩn danh), các vấn đề, câu trả lời và hội thoại được lưu ', h('strong', null, 'ngay trên thiết bị của em'), ' (trình duyệt).'),
           h('li', null, 'Website ', h('strong', null, 'không có tài khoản, mật khẩu'), ' và ', h('strong', null, 'không tự lưu hồ sơ của em trên máy chủ'), '.'),
@@ -47,22 +71,6 @@ export function renderPrivacy(root) {
       h('section', { class: 'card' },
         h('h2', null, 'An toàn của em'),
         h('p', null, 'Nếu em bị bạo lực, xâm hại hoặc cảm thấy không an toàn, hãy nói với ba mẹ, thầy cô hoặc người lớn em tin tưởng và gọi ', h('a', { href: 'tel:111' }, '111'), ' (Tổng đài quốc gia bảo vệ trẻ em). Nguy hiểm ngay lúc này: ', h('a', { href: 'tel:113' }, '113'), ' (Công an), ', h('a', { href: 'tel:115' }, '115'), ' (Cấp cứu).')
-      )
-    )
-  );
-}
-
-export function renderAbout(root) {
-  root.appendChild(
-    h('div', null,
-      h('div', { class: 'hero', style: 'padding-top:4px' },
-        h('img', { class: 'hero-logo', src: '/assets/logo.svg', alt: 'Logo AI Problem Solver' }),
-        h('h1', null, CONFIG.name), h('p', { class: 'sub' }, CONFIG.tagline), h('p', { class: 'slogan' }, `“${CONFIG.slogan}”`)),
-      h('section', { class: 'card' },
-        h('h2', null, 'Website này giúp gì?'),
-        h('p', null, 'Giúp học sinh THCS suy nghĩ có trình tự khi gặp vấn đề trong học tập, gia đình, tình bạn và cuộc sống hằng ngày, theo 6 bước:'),
-        h('ol', null, STEPS.map((s) => h('li', null, h('strong', null, s.name)))),
-        h('p', null, 'Em là người quyết định. Trợ lý AI chỉ đặt câu hỏi gợi mở và giúp em cân nhắc; mình không tự chọn phương án và không tự đánh dấu hoàn thành thay em.')
       ),
       h('section', { class: 'card' },
         h('h2', null, 'Cơ sở tham khảo'),

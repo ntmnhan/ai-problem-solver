@@ -565,7 +565,7 @@ def run():
                     page.wait_for_timeout(150)
                     no_hscroll(page)
                     # mỗi bước một màn hình: khung câu hỏi không bị cuộn (trừ điện thoại rất thấp)
-                    if h_ >= 800:
+                    if h_ >= 800 and w < 900:
                         over = page.evaluate("(() => { const m = document.querySelector('.wz-main'); return m.scrollHeight - m.clientHeight; })()")
                         assert over <= 2, f'bước {step} bị cuộn {over}px ở {w}x{h_}'
                     assert page.evaluate('document.documentElement.scrollHeight') <= h_ + 1, f'trang bị cuộn dọc ở {w}x{h_} bước {step}'
@@ -881,6 +881,7 @@ def run():
             first = page.evaluate('window.__ttsSpoken[0]')
             assert 'Cách 1' in first and 'Em chọn biện pháp nào' in first, first
             n0 = page.evaluate('window.__ttsSpoken.length')
+            expect(page.locator('.listen-btn .lt')).to_have_text('Nghe', timeout=8000)  # đợi đọc xong (đang đọc thì nút là Dừng)
             page.locator('.listen-btn').click()
             page.wait_for_function(f'window.__ttsSpoken.length > {n0}', timeout=15000)
             page.locator('#auto-read').uncheck()

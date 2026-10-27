@@ -667,3 +667,25 @@ body.wiz #toasts { top: 64px; bottom: auto; }
 .auto-read { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--muted, #667); cursor: pointer; }
 .auto-read input { width: 18px; height: 18px; }
 #sfx-btn.off { opacity: 0.5; }
+
+/* v18: màn hình máy tính không khóa cứng chiều cao — nội dung dài thì cuộn trang, chữ rộng và dễ đọc hơn */
+@media (min-width: 900px) {
+  body.wiz { height: auto; min-height: 100dvh; overflow: auto; }
+  body.wiz #shell { height: auto; min-height: 100dvh; }
+  body.wiz main { overflow: visible; max-width: 980px; padding: 10px 20px 8px; }
+  .wz { min-height: 0; flex: 1 0 auto; gap: 5px; }
+  .wz-card { overflow: visible; flex: 1 0 auto; padding: 14px 24px; gap: 10px; }
+  .wz-main { overflow: visible; flex: 0 0 auto; }
+  .wz-main > .col { flex: 0 0 auto; }
+  .wz-actions { position: sticky; bottom: 0; background: var(--bg, #f3f7ff); padding: 6px 0 4px; z-index: 5; }
+  .bubble.long .qs { display: block; -webkit-line-clamp: unset; overflow: visible; }
+  .qs { font-size: 1.25rem; }
+  .qh { font-size: 0.95rem; }
+  .plan-ov { overflow: visible; flex: 0 0 auto; gap: 10px; }
+  .plan-ov li { font-size: 1.1rem; padding: 12px 16px; }
+  .how { flex: 0 0 auto; overflow: visible; padding: 16px 20px; }
+  .how p { font-size: 1.15rem; line-height: 1.65; }
+  .pick-list, .pick-list.grow { overflow: visible; max-height: none; flex: 0 0 auto; }
+  .fld.grow textarea, .fld textarea { min-height: 100px; }
+  .wz-main .pick .pt { font-size: 1.08rem; }
+}

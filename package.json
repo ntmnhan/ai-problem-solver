@@ -1,6 +1,6 @@
 {
   "name": "ai-problem-solver",
-  "version": "17.0.0",
+  "version": "18.0.0",
   "private": true,
   "description": "AI Problem Solver - Trợ lý giải quyết vấn đề thực tiễn cho học sinh THCS",
   "engines": { "node": ">=20" },

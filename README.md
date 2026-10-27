@@ -110,6 +110,10 @@ tests/              Kiểm thử + báo cáo
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
 
+## Phiên bản 18 — Giao diện máy tính
+- Màn hình ≥900px: không khóa cứng chiều cao; nội dung dài cuộn trang, nút điều hướng dính đáy; chữ lớn, rộng hơn (tối đa 980px).
+- Sửa nút Nghe bị lặp chữ.
+
 ## Phiên bản 13 — Ghi danh tác giả
 - Dòng "Tạo bởi" ở trang kết quả/tệp xuất: tên 2 học sinh - Trường THCS Gò Vấp.
 - Thông tin tác giả ghi thêm tên trường.

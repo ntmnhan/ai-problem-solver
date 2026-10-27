@@ -776,11 +776,11 @@ export function render(root, params) {
     toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Em thêm giọng Tiếng Việt trong Cài đặt > Ngôn ngữ > Chuyển văn bản thành giọng nói nhé.', 'info', 9000);
   }
   function readTools(pg) {
-    const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', null, 'Nghe'));
+    const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe'));
     const cb = h('input', { type: 'checkbox', id: 'auto-read' });
     cb.checked = autoRead();
     cb.addEventListener('change', () => { try { localStorage.setItem(AUTO_KEY, cb.checked ? '1' : '0'); } catch (e) { /* bỏ qua */ } if (!cb.checked) voice.stopSpeaking(); });
-    syncListen = () => { lb.querySelector('span').textContent = reading ? 'Dừng' : 'Nghe'; lb.classList.toggle('on', reading); };
+    syncListen = () => { lb.querySelector('.lt').textContent = reading ? 'Dừng' : 'Nghe'; lb.classList.toggle('on', reading); };
     lb.addEventListener('click', () => {
       if (reading) { voice.stopSpeaking(); reading = false; syncListen(); return; }
       voice.speak(pg.speak(), (st) => { reading = st === 'speaking'; syncListen(); if (st === 'novoice') noViVoice(); });

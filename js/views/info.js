@@ -110,9 +110,6 @@ export function renderGuide(root) {
         h('div', { class: 'authors' }, CONFIG.authors.map((a) =>
           h('div', { class: 'author' + (a.teacher ? ' teacher' : '') },
             h('small', null, a.role + ':'), h('strong', null, a.name), h('span', null, a.sub))))
-      ),
-      h('section', { class: 'card card-soft' },
-        h('p', { class: 'muted small', style: 'margin:0' }, `Phiên bản ${CONFIG.version} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : '')
       )
     )
   );

@@ -1,4 +1,4 @@
-# Báo cáo kiểm thử bản 20 (27/10/2026) — server 28/28; E2E 46 bài (full 45/46, bài VO-02 lỗi thật đã sửa và chạy lại đạt)
+# Báo cáo kiểm thử bản 21 (27/10/2026) — server 28/28; E2E: lần chạy full bản 20 đạt 45/46 (VO-02 đã sửa); bản 21 chỉ bỏ thẻ phiên bản lặp ở trang Hướng dẫn, PR-03/CT-01/NV-01/PO-01 đạt
 
 - Máy chủ (node tests/run.js): 27/27 đạt.
 - Giao diện (tests/e2e.py, Playwright, API giả lập): 40/40 đạt (có FL-08 chưa hài lòng quay lại Bước 3, FL-09 lỗi AI ở Bước 3, SH-01..03).

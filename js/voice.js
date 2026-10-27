@@ -15,28 +15,32 @@ export function startListening({ onText, onState }) {
     return false;
   }
   stopListening(true);
-  rec = new SR();
+  const r = new SR();
+  rec = r;
   rec.lang = 'vi-VN';
   rec.interimResults = true;
   rec.continuous = false;
   rec.maxAlternatives = 1;
   let finalText = '';
   rec.onstart = () => {
+    if (rec !== r) return;
     listening = true;
     onState('listening');
   };
   rec.onresult = (ev) => {
+    if (rec !== r) return;
     let interim = '';
     for (let i = ev.resultIndex; i < ev.results.length; i++) {
-      const r = ev.results[i];
-      if (r.isFinal) finalText += r[0].transcript;
-      else interim += r[0].transcript;
+      const res = ev.results[i];
+      if (res.isFinal) finalText += res[0].transcript;
+      else interim += res[0].transcript;
     }
     onText(finalText, interim);
   };
   rec.onerror = (ev) => {
     listening = false;
-    if (rec) rec._errored = true;
+    r._errored = true;
+    if (rec !== r) return;
     const reason = ev.error === 'not-allowed' || ev.error === 'service-not-allowed' ? 'denied' : ev.error === 'no-speech' ? 'no-speech' : ev.error === 'aborted' ? 'aborted' : 'error';
     if (reason !== 'aborted') onState('error', { reason });
   };
@@ -44,7 +48,7 @@ export function startListening({ onText, onState }) {
     const was = listening;
     listening = false;
     // Sau một lỗi (vd từ chối micro) không ghi đè thông báo lỗi bằng "Đã dừng".
-    if (rec && !rec._cancelled && !rec._errored) {
+    if (rec === r && !r._cancelled && !r._errored) {
       onState('processing');
       setTimeout(() => onState('stopped'), 250);
     }

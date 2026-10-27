@@ -60,6 +60,33 @@ function buildContents(messages, task, payload) {
   return contents;
 }
 
+// Trí nhớ ngắn của máy chủ: model nào vừa lỗi thì tạm bỏ qua để khỏi mất thời gian.
+const cool = new Map();
+function coolOff(m, st) {
+  const ms = st === 404 || st === 403 ? 30 * 60000 : st === 429 || st === 503 ? 20000 : 5000;
+  cool.set(m, Date.now() + ms);
+}
+const isCool = (m) => (cool.get(m) || 0) > Date.now();
+
+// Giảm "thời gian suy nghĩ" để trả lời nhanh và không hết token vì suy nghĩ.
+function thinkingFor(model) {
+  if (/^gemini-3/.test(model)) return { thinkingLevel: 'low' };
+  if (/^gemini-2\.5/.test(model)) return { thinkingBudget: 0 };
+  return null;
+}
+
+// Đọc JSON dễ tính: bỏ rào ```, cắt lấy phần {...}.
+function parseJson(text) {
+  let t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { return JSON.parse(t); } catch (e) { /* thử tiếp */ }
+  const a = t.indexOf('{');
+  const b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) {
+    try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { /* bỏ qua */ }
+  }
+  return null;
+}
+
 async function callGemini(model, key, body, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   return fetch(url, {
@@ -106,66 +133,142 @@ module.exports = async function handler(req, res) {
     contents: buildContents(messages, task, payload),
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 4096,
+      maxOutputTokens: task === 'chat' ? 900 : 1800,
       responseMimeType: 'application/json',
       responseSchema: SCHEMAS[task]
     }
   };
 
-  const primary = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-  const models = [primary, 'gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m, i, a) => a.indexOf(m) === i);
+  const keys = [process.env.GEMINI_API_KEY, process.env.GEMINI_API_KEY_2]
+    .join(',').split(',').map((k) => k.trim()).filter(Boolean)
+    .filter((k, i, a) => a.indexOf(k) === i);
+  const primary = process.env.GEMINI_MODEL;
+  const models = [primary, 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
+    .filter(Boolean).filter((m, i, a) => a.indexOf(m) === i);
+  const RETRY = [404, 403, 429, 500, 502, 503, 504];
+  const deadline = Date.now() + 26000;
+  const left = () => deadline - Date.now();
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 25000);
+  // Một lần gọi có hạn giờ riêng, để một model treo không ăn hết thời gian của các model khác.
+  async function attempt(fn, ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), Math.max(1500, Math.min(ms, left())));
+    try { return await fn(ctrl.signal); } finally { clearTimeout(t); }
+  }
+
+  // Chuẩn hóa văn bản AI thành đối tượng; chat thì chấp nhận cả văn bản thường.
+  function toOut(text) {
+    const o = parseJson(text);
+    if (o && typeof o === 'object' && !Array.isArray(o)) return o;
+    if (task === 'chat' && String(text).trim().length > 3 && !/^\s*[{\[]/.test(text)) return { reply: String(text).trim(), risk: 'none' };
+    return null;
+  }
+
+  // Trả về { out } | { blocked } | { fail: {status, model} }
+  async function generate() {
+    let last = { status: 0, model: '' };
+    const live = models.filter((m) => !isCool(m));
+    const order = live.length ? live : models;
+    for (let pass = 0; pass < 2 && left() > 2500; pass++) {
+      for (const key of keys) {
+        for (const m of order) {
+          if (left() < 2500) break;
+          let level = 0; // 0 đủ cấu hình, 1 bỏ thinking, 2 bỏ cả schema
+          for (let tries = 0; tries < 3; tries++) {
+            const cfg = Object.assign({}, gen.generationConfig);
+            const th = thinkingFor(m);
+            if (level === 0 && th) cfg.thinkingConfig = th;
+            if (level >= 2) delete cfg.responseSchema;
+            let r;
+            try {
+              r = await attempt((sig) => callGemini(m, key, Object.assign({}, gen, { generationConfig: cfg }), sig), 11000);
+            } catch (e) {
+              last = { status: e && e.name === 'AbortError' ? 504 : 0, model: m };
+              coolOff(m, 503);
+              break;
+            }
+            if (r.ok) {
+              let data = null;
+              try { data = await r.json(); } catch (e) { last = { status: 502, model: m }; break; }
+              const cand = data && data.candidates && data.candidates[0];
+              const blocked = (data && data.promptFeedback && data.promptFeedback.blockReason) || (cand && cand.finishReason === 'SAFETY');
+              if (blocked || !cand || !cand.content) return { blocked: true, model: m };
+              const text = (cand.content.parts || []).filter((x) => !x.thought).map((x) => x.text || '').join('');
+              const out = text.trim() ? toOut(text) : null;
+              if (!out) { last = { status: 502, model: m }; break; } // rỗng/cụt/hỏng: thử model khác
+              return { out, model: m };
+            }
+            let detail = '';
+            try { detail = (await r.text()).slice(0, 300).replace(/AIza[\w-]+/g, '[key]'); } catch (e) { /* bỏ qua */ }
+            console.error('Gemini lỗi', r.status, m, detail);
+            last = { status: r.status, model: m };
+            if (r.status === 400 && level < 2) { level++; continue; } // thử lại bớt cấu hình
+            if (RETRY.includes(r.status)) coolOff(m, r.status);
+            break;
+          }
+        }
+      }
+      if (pass === 0 && left() > 4000) await new Promise((ok) => setTimeout(ok, 900));
+    }
+    // Dự phòng: dịch vụ AI khác tương thích OpenAI (không bắt buộc), vd Groq/OpenRouter bản miễn phí.
+    const fbKey = process.env.FALLBACK_API_KEY;
+    if (fbKey && left() > 2000) {
+      const base = (process.env.FALLBACK_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/$/, '');
+      const fbModel = process.env.FALLBACK_MODEL || 'llama-3.3-70b-versatile';
+      const sys = buildSystem(step, ctx) + '\n\nChỉ trả về MỘT đối tượng JSON hợp lệ, đúng cấu trúc sau (không thêm chữ nào ngoài JSON): ' + JSON.stringify(SCHEMAS[task]);
+      const msgs = [{ role: 'system', content: sys }].concat(gen.contents.map((c) => ({ role: c.role === 'model' ? 'assistant' : 'user', content: c.parts[0].text })));
+      try {
+        const r = await attempt((sig) => fetch(base + '/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + fbKey },
+          body: JSON.stringify({ model: fbModel, messages: msgs, temperature: 0.7, max_tokens: 2048, response_format: { type: 'json_object' } }),
+          signal: sig
+        }), 12000);
+        if (r.ok) {
+          const d = await r.json();
+          const text = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+          const out = text && toOut(text);
+          if (out) return { out, model: 'fallback:' + fbModel };
+        } else {
+          console.error('Dự phòng lỗi', r.status, fbModel);
+        }
+      } catch (e) { console.error('Dự phòng lỗi', e && e.name); }
+    }
+    return { fail: last };
+  }
+
   try {
-    let r = null;
-    let usedModel = null;
-    for (const m of models) {
-      r = await callGemini(m, key, gen, ctrl.signal);
-      usedModel = m;
-      if (![404, 403, 429, 500, 502, 503, 504].includes(r.status)) break; // model không có/quá tải/hết lượt: thử model dự phòng
+    const g = await generate();
+    if (g.fail) {
+      const st = g.fail.status;
+      if (st === 429) {
+        return json(res, 429, { error: 'quota', status: st, message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });
+      }
+      if (st === 504) {
+        return json(res, 504, { error: 'timeout', status: st, message: 'Trợ lý trả lời quá lâu. Em thử lại nhé.' });
+      }
+      return json(res, 502, { error: 'upstream', status: st, message: 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.' });
     }
-    if (r.status === 429) {
-      return json(res, 429, { error: 'quota', message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });
-    }
-    if (!r.ok) {
-      let detail = '';
-      try { detail = (await r.text()).slice(0, 300).replace(/AIza[\w-]+/g, '[key]'); } catch (e) { /* bỏ qua */ }
-      console.error('Gemini lỗi', r.status, usedModel, detail);
-      return json(res, 502, { error: 'upstream', status: r.status, message: 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.' });
-    }
-    const data = await r.json();
-    const cand = data && data.candidates && data.candidates[0];
-    const blocked = (data && data.promptFeedback && data.promptFeedback.blockReason) || (cand && cand.finishReason === 'SAFETY');
-    if (blocked || !cand || !cand.content) {
+    if (g.blocked) {
       return json(res, 200, {
         task,
         risk: 'concern',
         reply: 'Mình chưa thể trả lời nội dung này. Nếu em đang gặp điều gì khiến em lo lắng hay không an toàn, em hãy nói với ba mẹ, thầy cô hoặc người lớn em tin tưởng nhé.'
       });
     }
-    const text = (cand.content.parts || []).map((p) => p.text || '').join('');
-    let out;
-    try {
-      out = JSON.parse(text);
-    } catch (e) {
-      return json(res, 502, { error: 'bad_ai_output', message: 'Trợ lý trả lời chưa đúng định dạng. Em gửi lại giúp mình nhé.' });
-    }
+    const out = g.out;
     let risk = ['none', 'concern', 'danger'].includes(out.risk) ? out.risk : 'none';
     if (regexRisk && risk === 'none') risk = 'concern';
     out.risk = risk;
     out.task = task;
     if (task === 'chat') out.reply = clip(out.reply || '', 2500);
-    if (process.env.AIPS_DEBUG) out._model = usedModel;
+    if (process.env.AIPS_DEBUG) out._model = g.model;
     return json(res, 200, out);
   } catch (e) {
-    if (e && e.name === 'AbortError') {
-      return json(res, 504, { error: 'timeout', message: 'Trợ lý trả lời quá lâu. Em thử lại nhé.' });
-    }
     return json(res, 502, { error: 'upstream', message: 'Không kết nối được với trợ lý. Em kiểm tra mạng rồi thử lại nhé.' });
-  } finally {
-    clearTimeout(timer);
   }
 };
 
 module.exports._scrub = scrub;
+module.exports._parseJson = parseJson;
+module.exports._cool = cool;

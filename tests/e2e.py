@@ -62,6 +62,8 @@ def install_routes(ctx, chat_mode='ok', stats=None):
         body = json.loads(request.post_data)
         calls['chat'].append(body)
         mode = state['chat_mode']
+        if mode == 'upstream_down':
+            return route.fulfill(status=502, content_type='application/json', body=json.dumps({'error': 'upstream', 'status': 503, 'message': 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.'}))
         if mode == 'down':
             return route.fulfill(status=503, content_type='application/json', body=json.dumps({'error': 'not_configured', 'message': 'Trợ lý AI chưa được cấu hình (thiếu GEMINI_API_KEY trên máy chủ).'}))
         if mode == 'flaky' and not state['fail_once']:
@@ -109,19 +111,42 @@ def new_problem(page):
     page.locator('#new-problem').click()
     expect(page.locator('.stepper')).to_be_visible()
 
+def open_chat(page):
+    if page.get_by_label('Tin nhắn của em').count() == 0:
+        page.locator('#ask-ai').click()
+    expect(page.get_by_label('Tin nhắn của em')).to_be_visible()
+
+def close_chat(page):
+    if page.get_by_role('dialog').count():
+        page.get_by_role('dialog').get_by_role('button', name='Đóng').click()
+        expect(page.get_by_role('dialog')).to_have_count(0)
+
 def send_chat(page, text):
-    ta = page.get_by_label('Tin nhắn của em')
-    ta.fill(text)
+    open_chat(page)
+    page.get_by_label('Tin nhắn của em').fill(text)
     page.get_by_role('button', name='Gửi tin nhắn').click()
+
+def sub(page, k, total):
+    page.get_by_role('button', name=f'Câu {k} trên {total}').click()
 
 def no_hscroll(page):
     sw = page.evaluate('document.documentElement.scrollWidth')
     cw = page.evaluate('document.documentElement.clientWidth')
     assert sw <= cw + 1, f'tràn ngang: scrollWidth={sw} > clientWidth={cw}'
 
+def to_last(page):
+    for _ in range(8):
+        if page.locator('#finish-step').count():
+            return
+        page.get_by_role('button', name='Tiếp', exact=True).click()
+
 def confirm_step(page):
-    page.get_by_role('button', name=re.compile('Em xác nhận đã xong bước này')).click()
+    to_last(page)
+    page.locator('#finish-step').click()
     page.get_by_role('button', name='Đã xong', exact=True).click()
+
+def step_state(page, n):
+    return page.locator('.stepper li').nth(n - 1).locator('button').get_attribute('aria-label')
 
 def run():
     with sync_playwright() as p:
@@ -134,7 +159,7 @@ def run():
             expect(page.get_by_role('heading', name='AI Problem Solver')).to_be_visible()
             expect(page.get_by_text('AI hỗ trợ tư duy, không thay thế quyết định của học sinh.').first).to_be_visible()
             expect(page.get_by_text('Trợ lý giải quyết vấn đề thực tiễn').first).to_be_visible()
-            expect(page.locator('img.hero-logo')).to_be_visible()
+            expect(page.locator('.hero-art .owl').first).to_be_visible()
             expect(page.get_by_label('Họ và tên')).to_be_visible()
             expect(page.get_by_label('Lớp')).to_be_visible()
             expect(page.get_by_role('button', name='Bắt đầu')).to_be_visible()
@@ -181,9 +206,11 @@ def run():
             assert items.count() == 6
             for i in range(2, 7):
                 assert items.nth(i - 1).locator('button').is_disabled(), f'bước {i} phải bị khóa'
-            expect(page.get_by_text('Trạng thái: Chưa bắt đầu')).to_be_visible()
-            expect(page.get_by_role('heading', name='Vấn đề em đang gặp phải là…').first).to_be_visible()
+            assert 'Chưa bắt đầu' in step_state(page, 2)
+            expect(page.get_by_text('Vấn đề em đang gặp phải là…').first).to_be_visible()
+            open_chat(page)
             expect(page.get_by_text('Chào em! Hiện tại em đang gặp vấn đề gì trong học tập, gia đình, tình bạn hoặc cuộc sống hằng ngày? Em hãy chia sẻ cho mình biết nha!')).to_be_visible()
+            close_chat(page)
             page.screenshot(path=f'{OUT}/02-step1-390.png', full_page=True)
             ctx.close()
         record('FL-01', 'Luôn thấy đủ 6 bước; bước sau bị khóa; lời gợi ý Bước 1 đúng đặc tả; trạng thái "Chưa bắt đầu"', t_flow_basic)
@@ -194,11 +221,12 @@ def run():
             new_problem(page)
             send_chat(page, 'Em cãi nhau với bạn thân vì mượn bút')
             expect(page.get_by_text('Mình hiểu rồi. Em kể thêm')).to_be_visible()
-            expect(page.get_by_text('Trạng thái: Đang thực hiện')).to_be_visible()
+            close_chat(page)
+            assert 'Đang thực hiện' in step_state(page, 1)
             ta = page.get_by_label('Vấn đề em đang gặp phải là…', exact=True)
             assert 'cãi nhau với bạn thân' in ta.input_value()
-            assert page.locator('.stepper li').nth(0).locator('.dot svg').count() == 0, 'không được tự đánh dấu hoàn thành'
-            expect(page.get_by_text('Em đã xác nhận hoàn thành bước này')).to_have_count(0)
+            assert page.locator('.step.done').count() == 0, 'không được tự đánh dấu hoàn thành'
+            expect(page.locator('#finish-step')).to_be_visible()
             body = calls['chat'][-1]
             assert body['step'] == 1 and body['task'] == 'chat' and body['messages'][-1]['role'] == 'user'
             ctx.close()
@@ -208,21 +236,21 @@ def run():
             ctx, page = new_page(browser)
             start_anon(page)
             new_problem(page)
-            page.get_by_role('button', name=re.compile('Em xác nhận đã xong bước này')).click()
+            page.locator('#finish-step').click()
             expect(page.get_by_text('Em hãy ghi vấn đề em đang gặp')).to_be_visible()
             expect(page.get_by_role('dialog')).to_have_count(0)
             page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Em bị điểm kém môn Toán')
-            page.get_by_role('button', name=re.compile('Em xác nhận đã xong bước này')).click()
+            page.locator('#finish-step').click()
             expect(page.get_by_role('dialog')).to_be_visible()
             page.get_by_role('button', name='Chưa, để em xem lại').click()
-            expect(page.get_by_text('Trạng thái: Đang thực hiện')).to_be_visible()
-            page.get_by_role('button', name=re.compile('Em xác nhận đã xong bước này')).click()
+            assert 'Đang thực hiện' in step_state(page, 1)
+            page.locator('#finish-step').click()
             page.get_by_role('button', name='Đã xong', exact=True).click()
             expect(page).to_have_url(re.compile(r'#/problem/.+/2'))
-            expect(page.get_by_text('Trạng thái: Chưa bắt đầu')).to_be_visible()
+            assert 'Chưa bắt đầu' in step_state(page, 2)
             st = page.evaluate("JSON.parse(localStorage.getItem('aips:v1')).problems[0].steps")
             assert st['1']['status'] == 'done' and st['2']['status'] == 'not_started'
-            assert page.locator('.stepper li').nth(0).locator('.dot svg').count() == 1
+            assert page.locator('.step.done').count() == 1
             ctx.close()
         record('FL-03', 'Hoàn thành bước cần nội dung + hộp xác nhận; hủy thì không hoàn thành; xác nhận mới sang Bước 2', t_confirm_gate)
 
@@ -231,56 +259,63 @@ def run():
             new_problem(page)
             page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Em cãi nhau với bạn thân')
             confirm_step(page)
+            # Bước 2: mỗi lần một câu hỏi
+            expect(page).to_have_url(re.compile(r'/2$'))
             page.get_by_label('Điều em đã biết (chắc chắn)').fill('Bạn không nói chuyện với em 2 ngày')
-            page.get_by_label('Em muốn kết quả cuối cùng như thế nào? (mục tiêu của em)').fill('Làm hòa với bạn')
+            sub(page, 4, 4)
+            page.get_by_label('Mục tiêu của em').fill('Làm hòa với bạn')
             confirm_step(page)
             # Bước 3
             expect(page).to_have_url(re.compile(r'/3$'))
-            ai_btn = page.get_by_role('button', name='Gợi ý thêm từ AI')
+            ai_btn = page.get_by_role('button', name='Nhờ AI gợi ý thêm')
             assert ai_btn.is_disabled(), 'phải tự nghĩ trước mới nhờ AI'
             page.get_by_label('Thêm phương án').fill('Xin lỗi bạn trực tiếp')
-            page.get_by_role('button', name='Thêm', exact=True).first.click()
-            expect(page.locator('.list-item')).to_have_count(1)
+            page.get_by_role('button', name='Thêm', exact=True).click()
+            expect(page.locator('.sol')).to_have_count(1)
             assert not ai_btn.is_disabled()
             ai_btn.click()
             expect(page.get_by_text('Nhờ cô giáo chủ nhiệm hòa giải')).to_be_visible()
-            expect(page.locator('.list-item')).to_have_count(1)  # AI không tự thêm
+            expect(page.locator('.sol')).to_have_count(1)  # AI không tự thêm
             page.locator('.suggest-row', has_text='Viết thư tay cho bạn').get_by_role('button', name='Thêm').click()
-            expect(page.locator('.list-item')).to_have_count(2)
-            expect(page.get_by_text('Gợi ý từ AI, em chọn thêm')).to_be_visible()
-            expect(page.get_by_text('111').first).to_be_visible()
+            expect(page.locator('.sol')).to_have_count(2)
+            close_chat(page)
+            expect(page.locator('.chip.ai')).to_have_count(1)
             confirm_step(page)
-            # Bước 4
+            # Bước 4: mỗi phương án một câu, câu cuối là chọn
             expect(page).to_have_url(re.compile(r'/4$'))
-            expect(page.locator('.list-item.sel')).to_have_count(0)
-            page.get_by_role('button', name=re.compile('AI gợi ý ưu điểm')).click()
-            expect(page.get_by_text('Gợi ý của AI (chỉ để tham khảo)').first).to_be_visible()
-            expect(page.locator('.list-item.sel')).to_have_count(0)  # AI không tự chọn
-            page.get_by_role('button', name=re.compile('Em xác nhận đã xong bước này')).click()
+            page.get_by_label('Ưu điểm').fill('Nhanh, chân thành')
+            page.get_by_role('button', name='AI gợi ý', exact=True).click()
+            expect(page.get_by_text('Nhanh gọn').first).to_be_visible()
+            close_chat(page)
+            sub(page, 3, 3)
+            expect(page.locator('.pick.on')).to_have_count(0)  # AI không tự chọn
+            page.locator('#finish-step').click()
             expect(page.get_by_text('tự chọn một phương án')).to_be_visible()
-            page.get_by_role('button', name='Em chọn phương án này').first.click()
-            expect(page.locator('.list-item.sel')).to_have_count(1)
-            page.get_by_label('Ưu điểm').first.fill('Nhanh, chân thành')
+            page.locator('.pick').first.click()
+            expect(page.locator('.pick.on')).to_have_count(1)
             page.get_by_label('Vì sao cách em chọn phù hợp với mục tiêu và hoàn cảnh của em?').fill('Em muốn làm hòa sớm')
             confirm_step(page)
             # Bước 5
             expect(page).to_have_url(re.compile(r'/5$'))
             expect(page.get_by_text('Xin lỗi bạn trực tiếp').first).to_be_visible()
-            page.get_by_role('button', name='AI gợi ý cách chia nhỏ').click()
+            page.get_by_role('button', name='AI gợi ý chia việc').click()
             expect(page.get_by_text('Soạn tin nhắn')).to_be_visible()
-            expect(page.locator('.plan-row')).to_have_count(0)
+            expect(page.locator('.task')).to_have_count(0)
             page.locator('.suggest-row', has_text='Soạn tin nhắn').get_by_role('button', name='Thêm').click()
-            expect(page.locator('.plan-row')).to_have_count(1)
-            sel = page.locator('.plan-row select').first
+            expect(page.locator('.task')).to_have_count(1)
+            close_chat(page)
+            sel = page.locator('.task select').first
             assert sel.input_value() == 'todo', 'không giả định đã làm'
             expect(page.get_by_text('Đã xong 0/1 việc')).to_be_visible()
             confirm_step(page)
             # Bước 6
             expect(page).to_have_url(re.compile(r'/6$'))
-            expect(page.get_by_text('Mục tiêu ban đầu của em: Làm hòa với bạn')).to_be_visible()
             page.get_by_label('Kết quả thực tế là gì?').fill('Bạn đã đồng ý nói chuyện')
-            page.get_by_label('Kết luận cuối cùng của em').fill('Nói chuyện thẳng thắn hiệu quả')
+            sub(page, 2, 4)
+            expect(page.get_by_text('Mục tiêu ban đầu: Làm hòa với bạn')).to_be_visible()
+            sub(page, 4, 4)
             page.get_by_role('button', name='4', exact=True).click()
+            page.get_by_label('Kết luận cuối cùng của em').fill('Nói chuyện thẳng thắn hiệu quả')
             confirm_step(page)
             expect(page).to_have_url(re.compile(r'#/result/'))
 
@@ -309,11 +344,11 @@ def run():
             page.locator('.stepper li').nth(0).locator('button').click()
             expect(page).to_have_url(re.compile(r'/1$'))
             page.get_by_label('Vấn đề em đang gặp phải là…', exact=True).fill('Vấn đề đã sửa')
-            expect(page.get_by_text('Trạng thái: Đang thực hiện')).to_be_visible()  # phải xác nhận lại
+            assert 'Đang thực hiện' in step_state(page, 1)  # phải xác nhận lại
             page.locator('.stepper li').nth(1).locator('button').click()
-            expect(page.get_by_text('Em vừa sửa nội dung ở bước trước')).to_be_visible()
+            expect(page.get_by_text('Em vừa sửa bước trước')).to_be_visible()
             page.get_by_role('button', name='Em đã xem lại').click()
-            expect(page.get_by_text('Em vừa sửa nội dung ở bước trước')).to_have_count(0)
+            expect(page.get_by_text('Em vừa sửa bước trước')).to_have_count(0)
             page.wait_for_timeout(600)
             page.reload()
             expect(page.get_by_label('Điều em đã biết (chắc chắn)')).to_have_value('Điều đã biết A')
@@ -341,16 +376,17 @@ def run():
             page.get_by_label('Điều em đã biết (chắc chắn)').fill('Y')
             confirm_step(page)
             page.get_by_label('Thêm phương án').fill('Cách A')
-            page.get_by_role('button', name='Thêm', exact=True).first.click()
+            page.get_by_role('button', name='Thêm', exact=True).click()
             confirm_step(page)
-            page.get_by_role('button', name='Em chọn phương án này').click()
+            sub(page, 2, 2)
+            page.locator('.pick').first.click()
             page.get_by_label('Vì sao cách em chọn phù hợp với mục tiêu và hoàn cảnh của em?').fill('Lý do')
             confirm_step(page)
             page.locator('.stepper li').nth(2).locator('button').click()
             page.get_by_label('Xóa phương án 1').click()
             page.wait_for_timeout(600)
             page.locator('.stepper li').nth(3).locator('button').click()
-            expect(page.get_by_text('Em vừa sửa nội dung ở bước trước')).to_be_visible()
+            expect(page.get_by_text('Em vừa sửa bước trước')).to_be_visible()
             page.wait_for_timeout(600)
             chosen = page.evaluate("JSON.parse(localStorage.getItem('aips:v1')).problems[0].data.chosenId")
             assert chosen is None
@@ -381,14 +417,23 @@ def run():
         record('AI-02', 'AI báo risk=danger thì giao diện hiện thẻ an toàn mức nguy hiểm', t_safety_from_ai_risk)
 
         def t_error_retry():
+            # Lỗi tạm thời: app tự thử lại một lần, học sinh không thấy lỗi và tin nhắn không bị nhân đôi.
             ctx, page = new_page(browser, chat_mode='flaky')
             start_anon(page)
             new_problem(page)
             send_chat(page, 'Em khó học bài')
-            expect(page.get_by_text('Chưa gửi được.')).to_be_visible()
+            expect(page.get_by_text('Mình hiểu rồi. Em kể thêm')).to_be_visible()
+            assert page.locator('.msg.me').count() == 1, 'tự thử lại không được nhân đôi tin nhắn'
+            ctx.close()
+            # Lỗi kéo dài: báo rõ ràng, có nút Thử lại, không nhân đôi tin nhắn.
+            ctx, page = new_page(browser, chat_mode='upstream_down')
+            start_anon(page)
+            new_problem(page)
+            send_chat(page, 'Em khó học bài')
+            expect(page.get_by_text('Chưa gửi được.')).to_be_visible(timeout=8000)
             n_user = page.locator('.msg.me').count()
             page.get_by_role('button', name='Thử lại').click()
-            expect(page.get_by_text('Mình hiểu rồi. Em kể thêm')).to_be_visible()
+            expect(page.get_by_text('Chưa gửi được.')).to_be_visible(timeout=8000)
             assert page.locator('.msg.me').count() == n_user, 'thử lại không được nhân đôi tin nhắn'
             ctx.close()
         record('AI-03', 'Lỗi AI: báo lỗi rõ ràng + nút Thử lại, không nhân đôi tin nhắn của học sinh', t_error_retry)
@@ -417,7 +462,7 @@ def run():
             assert before != after
             page.reload()
             assert page.evaluate("document.documentElement.getAttribute('data-theme')") == after
-            page.get_by_role('button', name=re.compile('Nền (sáng|tối)')).click()
+            page.locator('#theme-btn').click()
             assert page.evaluate("document.documentElement.getAttribute('data-theme')") == before
             if after == 'dark':
                 page.locator('#theme-btn').click()
@@ -425,7 +470,7 @@ def run():
             page.goto(BASE + '/')
             page.screenshot(path=f'{OUT}/05-dark-start-390.png', full_page=True)
             ctx.close()
-        record('UI-02', 'Nền sáng/tối: nút ở header và chân trang hoạt động, lựa chọn được ghi nhớ khi tải lại', t_theme)
+        record('UI-02', 'Nền sáng/tối: nút ở header hoạt động, lựa chọn được ghi nhớ khi tải lại', t_theme)
 
         def t_dark_contrast():
             ctx, page = new_page(browser, color_scheme='dark')
@@ -447,21 +492,28 @@ def run():
                 pid = page.url.split('/result/')[1]
                 for step in range(1, 7):
                     page.goto(f'{BASE}/#/problem/{pid}/{step}')
-                    page.wait_for_timeout(120)
+                    page.wait_for_timeout(150)
                     no_hscroll(page)
-                    # nút gửi và ô nhập nằm trong khung nhìn ngang
+                    # mỗi bước một màn hình: khung câu hỏi không bị cuộn (trừ điện thoại rất thấp)
+                    if h_ >= 800:
+                        over = page.evaluate("(() => { const m = document.querySelector('.wz-main'); return m.scrollHeight - m.clientHeight; })()")
+                        assert over <= 2, f'bước {step} bị cuộn {over}px ở {w}x{h_}'
+                    assert page.evaluate('document.documentElement.scrollHeight') <= h_ + 1, f'trang bị cuộn dọc ở {w}x{h_} bước {step}'
+                    # khay trợ lý: nút gửi nằm trong khung nhìn, đủ lớn
+                    page.locator('#ask-ai').click()
                     box = page.get_by_role('button', name='Gửi tin nhắn').bounding_box()
                     assert box and box['x'] + box['width'] <= w + 1 and box['x'] >= 0, f'nút gửi ngoài màn hình ở {w}px bước {step}'
                     assert box['width'] >= 40 and box['height'] >= 40
+                    close_chat(page)
                     if w in (360, 1280) and step in (3, 4, 5):
-                        page.screenshot(path=f'{OUT}/07-step{step}-{w}.png', full_page=True)
+                        page.screenshot(path=f'{OUT}/07-step{step}-{w}.png')
                 page.goto(f'{BASE}/#/home')
                 no_hscroll(page)
                 page.goto(f'{BASE}/#/result/{pid}')
                 no_hscroll(page)
                 assert not page.errs, page.errs
                 ctx.close()
-        record('UI-04', 'Không tràn ngang, nút gửi đủ lớn (≥40px) ở 360/414/768/1280px trên mọi bước, trang chủ và kết quả', t_layouts)
+        record('UI-04', 'Không tràn ngang; mỗi bước vừa một màn hình (không cuộn trang); nút gửi đủ lớn ở 360/414/768/1280px', t_layouts)
 
         # ---------- Xuất tệp ----------
         def t_export():
@@ -581,7 +633,7 @@ def run():
             page.wait_for_timeout(500)
             assert calls['visit'] == 1, f'bộ đếm không được tăng khi chuyển trang/tải lại trong cùng phiên (={calls["visit"]})'
             expect(page.get_by_text('Chưa có dữ liệu đánh giá')).to_be_visible()
-            expect(page.get_by_text(re.compile('Phiên bản 1.0.0'))).to_be_visible()
+            expect(page.get_by_text(re.compile(r'Phiên bản \d+\.\d+\.\d+'))).to_be_visible()
             expect(page.get_by_text(re.compile('Cập nhật 26/10/2026'))).to_be_visible()
             ctx.close()
         record('CT-01', 'Bộ đếm: tăng đúng 1 lần/phiên, không tăng khi chuyển bước/tải lại; "Chưa có dữ liệu đánh giá" khi rỗng; có phiên bản + ngày', t_counter)
@@ -677,32 +729,35 @@ def run():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             start_anon(page)
             new_problem(page)
-            assert page.get_by_role('button', name=re.compile('Voice Mode')).count() == 1, 'chỉ một điểm truy cập Voice Mode'
-            page.get_by_role('button', name=re.compile('Bật Voice Mode')).click()
-            expect(page.get_by_role('group', name='Voice Mode')).to_be_visible()
-            expect(page.get_by_text('Đang nghe…')).to_be_visible()
+            open_chat(page)
+            dlg = page.get_by_role('dialog')
+            assert dlg.get_by_role('button', name=re.compile('Voice Mode')).count() == 1, 'mỗi ô nhập chỉ một nút Voice Mode'
+            dlg.get_by_role('button', name=re.compile('Bật Voice Mode')).click()
+            expect(dlg.get_by_text('Đang nghe…')).to_be_visible()
             expect(page.get_by_label('Tin nhắn của em')).to_have_value(re.compile('em đang buồn vì điểm kém'))
-            expect(page.get_by_text('Đã dừng')).to_be_visible(timeout=4000)
-            assert len(calls['chat']) == 0 or True
-            n_before = len(calls['chat'])
+            expect(dlg.get_by_text('Đã dừng')).to_be_visible(timeout=4000)
             page.get_by_label('Tin nhắn của em').fill('em đang buồn vì điểm kém (đã sửa)')
             page.get_by_role('button', name='Gửi tin nhắn').click()
             expect(page.get_by_text('Mình hiểu rồi')).to_be_visible()
-            expect(page.get_by_text('Đang phát âm thanh…')).to_be_visible()
+            expect(dlg.get_by_text('Đang phát âm thanh…')).to_be_visible()
             spoken = page.evaluate('window.__ttsSpoken')
             assert spoken and 'Mình hiểu rồi' in spoken[0]
-            page.get_by_role('button', name='Dừng đọc').click()
-            expect(page.get_by_text('Đã dừng')).to_be_visible()
-            page.get_by_role('button', name='Quay lại nhập văn bản').click()
-            expect(page.get_by_role('group', name='Voice Mode')).to_have_count(0)
+            dlg.get_by_role('button', name='Dừng đọc').click()
+            expect(dlg.get_by_text('Đang phát âm thanh…')).to_have_count(0)
+            # quay lại nhập văn bản
+            dlg.get_by_role('button', name=re.compile('Bật Voice Mode')).click()
+            expect(dlg.get_by_text('Đã dừng')).to_be_visible(timeout=4000)
+            dlg.get_by_role('button', name='Quay lại nhập văn bản').click()
+            expect(dlg.get_by_text('Đã dừng')).to_have_count(0)
             ctx.close()
-        record('VO-01', 'Voice Mode: 1 điểm truy cập; nghe→chữ hiện trong ô để sửa trước khi gửi; đọc phản hồi; có Dừng đọc/Quay lại văn bản; hiển thị đủ trạng thái', t_voice)
+        record('VO-01', 'Voice Mode: nghe→chữ hiện trong ô để sửa trước khi gửi; đọc phản hồi; có Dừng đọc/Quay lại văn bản; hiển thị đủ trạng thái', t_voice)
 
         def t_voice_unsupported():
             ctx, page = new_page(browser, init_scripts=["delete window.SpeechRecognition; delete window.webkitSpeechRecognition; Object.defineProperty(window,'speechSynthesis',{value:undefined,configurable:true});"])
             start_anon(page)
             new_problem(page)
-            page.get_by_role('button', name=re.compile('Bật Voice Mode')).click()
+            open_chat(page)
+            page.get_by_role('dialog').get_by_role('button', name=re.compile('Bật Voice Mode')).click()
             expect(page.get_by_text('Trình duyệt chưa hỗ trợ nhận diện giọng nói')).to_be_visible()
             send_chat(page, 'Vẫn gõ chữ được')
             expect(page.get_by_text('Mình hiểu rồi')).to_be_visible()
@@ -717,7 +772,8 @@ def run():
             ctx, page = new_page(browser, init_scripts=[DENIED])
             start_anon(page)
             new_problem(page)
-            page.get_by_role('button', name=re.compile('Bật Voice Mode')).click()
+            open_chat(page)
+            page.get_by_role('dialog').get_by_role('button', name=re.compile('Bật Voice Mode')).click()
             expect(page.get_by_text('Chưa được phép dùng micro')).to_be_visible()
             send_chat(page, 'Vẫn nhắn được')
             expect(page.get_by_text('Mình hiểu rồi')).to_be_visible()

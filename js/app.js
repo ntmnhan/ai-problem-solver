@@ -128,27 +128,26 @@ function renderFooter() {
     rating = null;
   } else if (stats.configured === false) {
     counter = h('span', { class: 'stat', title: 'Cần cấu hình Google Apps Script để đếm bền vững' }, 'Bộ đếm chưa được cấu hình');
-    rating = h('span', { class: 'stat' }, 'Chưa có dữ liệu đánh giá');
+    rating = h('span', { class: 'stat rating' }, 'Chưa có dữ liệu đánh giá');
   } else if (stats.error) {
     counter = h('span', { class: 'stat' }, 'Chưa tải được bộ đếm');
     rating = null;
   } else {
-    counter = h('span', { class: 'stat' }, icon('user', 16), 'Lượt truy cập: ', h('b', { id: 'visit-count' }, Number(stats.visits || 0).toLocaleString('vi-VN')));
+    counter = h('span', { class: 'stat' }, icon('user', 16), h('span', { class: 't-long' }, 'Lượt truy cập: '), h('b', { id: 'visit-count' }, Number(stats.visits || 0).toLocaleString('vi-VN')));
     rating = stats.ratingCount > 0
-      ? h('span', { class: 'stat', id: 'rating-summary' }, h('span', { class: 'stars', 'aria-hidden': 'true' }, stars(stats.ratingAvg)), h('b', null, String(stats.ratingAvg).replace('.', ',')), `/5 (${stats.ratingCount} đánh giá)`)
-      : h('span', { class: 'stat', id: 'rating-summary' }, 'Chưa có dữ liệu đánh giá');
+      ? h('span', { class: 'stat rating', id: 'rating-summary' }, h('span', { class: 'stars', 'aria-hidden': 'true' }, stars(stats.ratingAvg)), h('b', null, String(stats.ratingAvg).replace('.', ',')), `/5 (${stats.ratingCount} đánh giá)`)
+      : h('span', { class: 'stat rating', id: 'rating-summary' }, 'Chưa có dữ liệu đánh giá');
   }
   const canFeedback = !stats.loading && stats.configured !== false;
   footerEl.appendChild(
     h('div', { class: 'footer-in' },
-      h('div', { class: 'footer-row' }, counter, rating),
-      h('div', { class: 'footer-row' },
-        btn('Đánh giá và góp ý', { small: true, icon: 'star', disabled: !canFeedback, title: canFeedback ? '' : 'Chức năng này chưa được cấu hình', onClick: openFeedback }),
-        btn(currentTheme() === 'dark' ? 'Nền sáng' : 'Nền tối', { small: true, icon: currentTheme() === 'dark' ? 'sun' : 'moon', onClick: toggleTheme })),
-      h('div', { class: 'footer-row muted small' },
-        h('span', null, `${CONFIG.name} · Phiên bản ${CONFIG.version} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : ''),
+      h('div', { class: 'footer-row f-main' }, counter, rating,
+        h('button', { type: 'button', class: 'link-btn', disabled: !canFeedback, title: canFeedback ? '' : 'Chức năng này chưa được cấu hình', onClick: openFeedback }, icon('star', 14), h('span', null, 'Đánh giá và góp ý')),
+        h('span', { class: 'ver' }, h('span', { class: 't-long' }, 'Phiên bản '), h('span', { class: 't-short' }), CONFIG.version)),
+      h('div', { class: 'footer-row f-extra muted small' },
+        h('span', null, `${CONFIG.name} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : ''),
         h('span', null, h('a', { href: '#/privacy' }, 'Quyền riêng tư'), ' · ', h('a', { href: '#/about' }, 'Giới thiệu'))),
-      h('div', { class: 'muted small' }, CONFIG.slogan)
+      h('div', { class: 'f-extra muted small' }, CONFIG.slogan)
     )
   );
 }
@@ -240,6 +239,7 @@ function route() {
   if (cleanup) { try { cleanup(); } catch (e) { /* bỏ qua */ } cleanup = null; }
   voice.stopAll();
   closeModal();
+  document.body.classList.remove('wiz');
   menuOpen = false;
   const parts = parse();
   const page = parts[0] || '';

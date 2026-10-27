@@ -204,6 +204,74 @@ function gemini(obj, extra = {}) {
     assert.strictEqual(res.statusCode, 502);
   });
 
+  const ask = async (extra) => { const res = mockRes(); await chat(mockReq(Object.assign({ step: 1, messages: [{ role: 'user', text: 'abc' }] }, extra || {})), res); return res; };
+  const txt = (o) => ({ ok: true, status: 200, json: async () => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: o }] } }] }) });
+
+  await t('A-13', 'Lỗi 400 (thinkingConfig/schema không hỗ trợ) tự thử lại với cấu hình đơn giản hơn', async () => {
+    chat._cool.clear();
+    const bodies = [];
+    global.fetch = async (url, init) => {
+      const b = JSON.parse(init.body); bodies.push(b);
+      return b.generationConfig.thinkingConfig ? { ok: false, status: 400, text: async () => 'bad', json: async () => ({}) } : gemini({ reply: 'ổn', risk: 'none' });
+    };
+    const res = await ask();
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.json.reply, 'ổn');
+    assert(bodies[0].generationConfig.thinkingConfig && !bodies[1].generationConfig.thinkingConfig);
+  });
+
+  await t('A-14', 'AI trả JSON bọc ```json hoặc kèm chữ thừa vẫn đọc được', async () => {
+    chat._cool.clear();
+    global.fetch = async () => txt('Đây nhé:\n```json\n{"reply":"xin chào","risk":"none"}\n```');
+    const res = await ask();
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.json.reply, 'xin chào');
+  });
+
+  await t('A-15', 'Chat: AI trả văn bản thường (không JSON) vẫn dùng làm câu trả lời', async () => {
+    chat._cool.clear();
+    global.fetch = async () => txt('Mình nghe em đây, em kể thêm nhé.');
+    const res = await ask();
+    assert.strictEqual(res.statusCode, 200);
+    assert(/nghe em/.test(res.json.reply));
+  });
+
+  await t('A-16', 'Model lỗi 503 được tạm bỏ qua ở lượt sau', async () => {
+    chat._cool.clear();
+    let calls = [];
+    global.fetch = async (url) => { calls.push(url); return /3\.5-flash-lite/.test(url) ? { ok: false, status: 503, text: async () => '', json: async () => ({}) } : gemini({ reply: 'ok', risk: 'none' }); };
+    await ask();
+    calls = [];
+    await ask();
+    assert(!calls.some((u) => /3\.5-flash-lite/.test(u)));
+  });
+
+  await t('A-17', 'Gemini hỏng hết → chuyển sang dịch vụ dự phòng (FALLBACK_API_KEY)', async () => {
+    chat._cool.clear();
+    process.env.FALLBACK_API_KEY = 'fb';
+    let usedFb = false;
+    global.fetch = async (url) => {
+      if (/groq/.test(url)) { usedFb = true; return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: '{"reply":"từ dự phòng","risk":"none"}' } }] }) }; }
+      return { ok: false, status: 503, text: async () => '', json: async () => ({}) };
+    };
+    const res = await ask();
+    delete process.env.FALLBACK_API_KEY;
+    assert(usedFb && res.statusCode === 200 && res.json.reply === 'từ dự phòng');
+  });
+
+  await t('A-18', '/api/health báo từng model, không lộ khóa', async () => {
+    chat._cool.clear();
+    const health = require('../api/health');
+    health._reset();
+    process.env.GEMINI_API_KEY = 'SECRET-KEY';
+    global.fetch = async (url) => (/3\.8-flash/.test(url) ? { ok: true, status: 200 } : { ok: false, status: 404 });
+    const res = mockRes();
+    await health({ method: 'GET', headers: {} }, res);
+    assert.strictEqual(res.json.status, 'ok');
+    assert(res.json.models.length >= 4);
+    assert(!res.body.includes('SECRET-KEY'));
+  });
+
   global.fetch = origFetch;
   let failed = 0;
   results.forEach((r) => { console.log(`${r.ok ? 'ĐẠT      ' : 'KHÔNG ĐẠT'}  ${r.id}  ${r.name}${r.ok ? '' : '  -> ' + r.err}`); if (!r.ok) failed++; });

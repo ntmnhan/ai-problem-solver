@@ -38,8 +38,18 @@ async function request(path, opts = {}, timeoutMs = 35000) {
   }
 }
 
-export function askAI(body) {
-  return request('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+export async function askAI(body) {
+  const send = () => request('/api/chat', { method: 'POST', body: JSON.stringify(body) });
+  try {
+    return await send();
+  } catch (e) {
+    // Lỗi tạm thời từ phía AI: tự thử lại một lần (cùng nội dung, không nhân đôi tin nhắn).
+    if (['upstream', 'quota', 'timeout', 'bad_ai_output'].includes(e.code)) {
+      await new Promise((ok) => setTimeout(ok, 1500));
+      return send();
+    }
+    throw e;
+  }
 }
 
 export function getStats() {

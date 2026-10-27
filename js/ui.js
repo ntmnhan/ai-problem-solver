@@ -61,7 +61,20 @@ const ICONS = {
   copy: 'M9 9h11v11H9z M5 15H4V4h11v1',
   phone: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z',
   user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
-  info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01'
+  info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35',
+  bulb: 'M9 18h6 M10 22h4 M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z',
+  target: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  scale: 'M12 3v18 M6 21h12 M3 7l9-3 9 3 M5 8l-3 7a4 4 0 0 0 6 0L5 8z M19 8l-3 7a4 4 0 0 0 6 0l-3-7z',
+  rocket: 'M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0 M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5',
+  trophy: 'M8 21h8 M12 17v4 M7 4h10v5a5 5 0 0 1-10 0V4z M17 5h3v2a3 3 0 0 1-3 3 M7 5H4v2a3 3 0 0 0 3 3',
+  heart: 'M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z',
+  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75',
+  circle: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+  refresh: 'M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15',
+  more: 'M12 12h.01 M19 12h.01 M5 12h.01',
+  chevleft: 'M15 18l-6-6 6-6',
+  chevright: 'M9 18l6-6-6-6'
 };
 
 export function icon(name, size = 20) {
@@ -116,7 +129,7 @@ export function toast(message, kind = 'info', ms = 3200) {
 
 // ---------- Hộp thoại ----------
 let activeModal = null;
-export function modal({ title, body, actions = [], wide = false, onClose }) {
+export function modal({ title, body, actions = [], wide = false, onClose, variant = '', headExtra = null, titleIcon = null }) {
   closeModal();
   const root = document.getElementById('modal-root');
   const prevFocus = document.activeElement;
@@ -130,14 +143,16 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
   };
   const dialog = h(
     'div',
-    { class: `modal ${wide ? 'modal-wide' : ''}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+    { class: `modal ${wide ? 'modal-wide' : ''} ${variant === 'sheet' ? 'modal-sheet' : ''}`, role: 'dialog', 'aria-modal': 'true', 'aria-label': title, tabindex: variant === 'sheet' ? '-1' : null },
     h(
       'div',
       { class: 'modal-head' },
-      h('h2', null, title),
+      h('h2', null, titleIcon, title),
+      h('span', { class: 'head-spacer' }),
+      headExtra,
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Đóng', onClick: close }, icon('x'))
     ),
-    h('div', { class: 'modal-body' }, body),
+    h('div', { class: `modal-body ${variant === 'sheet' ? 'sheet-body' : ''}` }, body),
     actions.length
       ? h(
           'div',
@@ -157,7 +172,7 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
         )
       : null
   );
-  const overlay = h('div', { class: 'overlay' }, dialog);
+  const overlay = h('div', { class: `overlay ${variant === 'sheet' ? 'overlay-sheet' : ''}` }, dialog);
   overlay.addEventListener('mousedown', (e) => {
     if (e.target === overlay) close();
   });
@@ -167,7 +182,7 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
   root.appendChild(overlay);
   document.body.classList.add('modal-open');
   activeModal = { el: overlay, close };
-  const first = dialog.querySelector('textarea, input, select') || dialog.querySelector('.modal-actions button') || dialog.querySelector('button');
+  const first = variant === 'sheet' ? dialog : dialog.querySelector('textarea, input, select') || dialog.querySelector('.modal-actions button') || dialog.querySelector('button');
   setTimeout(() => first && first.focus(), 30);
   return close;
 }

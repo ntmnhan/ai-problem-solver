@@ -102,6 +102,7 @@ export function renderGuide(root) {
         h('ul', null,
           h('li', null, 'AI có thể nhầm. Em hãy tự kiểm chứng thông tin và hỏi ý kiến người lớn đáng tin cậy.'),
           h('li', null, 'Trợ lý không thay thế thầy cô, ba mẹ hay chuyên gia, và không chẩn đoán sức khỏe tâm thần.'),
+          h('li', null, 'Giọng đọc lời chào là giọng tổng hợp Piper (mô hình vais1000, dữ liệu VAIS-1000, giấy phép CC BY 4.0).'),
           h('li', null, 'Logo là bản dựng mới (la bàn trắng trong vòng tròn xanh dương), chưa phải tệp logo gốc.'))
       ),
       h('section', { class: 'card' },

@@ -3,8 +3,7 @@ import * as store from '../store.js';
 import { h, icon, btn, toast } from '../ui.js';
 import { pickRestoreFile } from '../actions.js';
 import { owl, badge, STEP_ICON, STEP_COLOR } from '../art.js';
-import * as voice from '../voice.js';
-import { autoGreet, sayGreeting } from '../greet.js';
+import { autoGreet, playGreeting, stopGreeting, isPlaying } from '../greet.js';
 
 export function render(root) {
   if (store.getProfile()) {
@@ -14,9 +13,13 @@ export function render(root) {
   const name = h('input', { type: 'text', class: 'input', maxlength: 60, placeholder: 'Họ và tên', 'aria-label': 'Họ và tên', autocomplete: 'off', id: 'f-name' });
   const cls = h('input', { type: 'text', class: 'input', maxlength: 20, placeholder: 'Lớp (6/6)', 'aria-label': 'Lớp', autocomplete: 'off', id: 'f-cls' });
   const stopGreet = autoGreet();
-  const go = () => { stopGreet(); voice.stopSpeaking(); location.hash = '#/home'; };
-  const listen = voice.supportsTTS ? h('button', { type: 'button', class: 'btn btn-small listen-btn', id: 'greet-btn', 'aria-label': 'Nghe lời chào' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe lời chào')) : null;
-  if (listen) listen.addEventListener('click', () => { sayGreeting((s) => { if (s === 'novoice') toast('Máy này chưa có giọng đọc tiếng Việt. Em thêm giọng Tiếng Việt trong Cài đặt > Ngôn ngữ nhé.', 'info', 7000); }); });
+  const go = () => { stopGreet(); stopGreeting(); location.hash = '#/home'; };
+  const listen = h('button', { type: 'button', class: 'btn btn-small listen-btn', id: 'greet-btn', 'aria-label': 'Nghe lời chào' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe lời chào'));
+  listen.addEventListener('click', async () => {
+    if (isPlaying()) { stopGreeting(); return; }
+    const ok = await playGreeting();
+    if (!ok) toast('Chưa phát được âm thanh. Em kiểm tra loa hoặc âm lượng nhé.', 'error', 5000);
+  });
 
   root.appendChild(
     h('div', { class: 'start' },

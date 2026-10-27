@@ -933,34 +933,35 @@ def run():
         record('SD-02', 'Máy không có giọng tiếng Việt: không đọc bằng giọng tiếng Anh, có thông báo hướng dẫn', t_no_english_voice)
 
         def t_greeting_and_icons():
-            # 1) tự chào khi vừa vào (trình duyệt cho phép)
-            ctx, page = new_page(browser, init_scripts=[FAKE_SR])
+            PLAY_OK = "window.__played=[]; HTMLMediaElement.prototype.play=function(){ window.__played.push(this.src); return Promise.resolve(); };"
+            PLAY_BLOCK = "window.__played=[]; window.__act=false; window.addEventListener('pointerdown',()=>{window.__act=true;},true); HTMLMediaElement.prototype.play=function(){ if(!window.__act) return Promise.reject(new DOMException('blocked','NotAllowedError')); window.__played.push(this.src); return Promise.resolve(); };"
+            # 1) tự chào bằng tệp âm thanh thu sẵn khi vừa vào (không phụ thuộc giọng của trình duyệt)
+            ctx, page = new_page(browser, init_scripts=[PLAY_OK])
             page.goto(BASE + '/')
-            page.wait_for_function("window.__ttsSpoken.length >= 1", timeout=8000)
-            g = page.evaluate('window.__ttsSpoken[0]')
-            assert 'Xin chào' in g and 'AI Problem Solver' in g and 'chế độ ẩn danh' in g and 'Bắt đầu' in g and 'Cú' in g, g
+            page.wait_for_function("window.__played.length >= 1", timeout=8000)
+            assert 'assets/greeting.mp3' in page.evaluate('window.__played[0]')
             expect(page.locator('#greet-btn')).to_be_visible()
             ctx.close()
             # 2) bị chặn tự phát: phát ở lần chạm đầu tiên
-            BLOCK = FAKE_SR.replace("speak(u){ window.__ttsSpoken.push(u.text);", "speak(u){ if(!window.__act){ setTimeout(()=>u.onerror&&u.onerror(),10); return; } window.__ttsSpoken.push(u.text);") + "window.addEventListener('pointerdown',()=>{window.__act=true;},true);"
-            assert BLOCK != FAKE_SR
-            ctx, page = new_page(browser, init_scripts=[BLOCK])
+            ctx, page = new_page(browser, init_scripts=[PLAY_BLOCK])
             page.goto(BASE + '/')
             page.wait_for_timeout(700)
-            assert page.evaluate('window.__ttsSpoken.length') == 0
+            assert page.evaluate('window.__played.length') == 0
             page.mouse.click(5, 300)
-            page.wait_for_function("window.__ttsSpoken.length >= 1", timeout=5000)
+            page.wait_for_function("window.__played.length >= 1", timeout=5000)
             ctx.close()
-            # 3) không có giọng tiếng Việt: không đọc bằng giọng Anh; icon trên thanh trên cùng hiển thị ở điện thoại
-            ctx, page = new_page(browser, (360, 740), init_scripts=[FAKE_SR.replace("getVoices(){ return []; }", "getVoices(){ return [{lang:'en-US',name:'Samantha'}]; }")])
+            # 3) nút "Nghe lời chào" phát lại; icon trên thanh trên cùng hiển thị ở điện thoại 360px
+            ctx, page = new_page(browser, (360, 740), init_scripts=[PLAY_OK])
             page.goto(BASE + '/')
-            page.wait_for_timeout(700)
-            assert page.evaluate('window.__ttsSpoken.length') == 0
+            page.wait_for_function("window.__played.length >= 1", timeout=8000)
+            n0 = page.evaluate('window.__played.length')
+            page.locator('#greet-btn').click()
+            page.wait_for_function(f"window.__played.length > {n0}", timeout=5000)
             for sel in ['#guide-link', '#admin-link']:
                 bb = page.locator(sel + ' svg').bounding_box()
                 assert bb and bb['width'] >= 16 and bb['height'] >= 16, f'icon {sel} bị ẩn'
             ctx.close()
-        record('GR-01', 'Lời chào bằng giọng nói: tự chào khi vào, bị chặn thì chào ở lần chạm đầu, không đọc bằng giọng Anh; icon Hướng dẫn/Admin hiển thị ở 360px', t_greeting_and_icons)
+        record('GR-01', 'Lời chào bằng tệp âm thanh tiếng Việt: tự phát khi vào, bị chặn thì phát ở lần chạm đầu, có nút Nghe lời chào; icon Hướng dẫn/Admin hiển thị ở 360px', t_greeting_and_icons)
 
         def t_poster():
             ctx, page = new_page(browser)

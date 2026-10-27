@@ -3,7 +3,7 @@ export const CONFIG = {
   name: 'AI Problem Solver',
   tagline: 'Trợ lý giải quyết vấn đề thực tiễn',
   slogan: 'AI hỗ trợ tư duy, không thay thế quyết định của học sinh.',
-  version: '1.2.0',
+  version: '1.3.0',
   releaseDate: '27/10/2026',
   // Điền địa chỉ chính thức (https://...) nếu muốn cố định URL của mã QR.
   // Để trống: dùng địa chỉ đang mở nếu là https và không phải localhost.
@@ -31,43 +31,38 @@ export const STEPS = [
   },
   {
     n: 2,
-    short: 'Phân tích',
-    name: 'Tìm hiểu và phân tích',
+    short: 'Nguyên nhân',
+    name: 'Tìm hiểu nguyên nhân và mục tiêu',
     title: 'Mình cùng tìm hiểu kỹ hơn',
-    intro:
-      'Mình cùng làm rõ nguyên nhân nhé. Em hãy kể thêm: chuyện này bắt đầu khi nào, và điều gì em đã chắc chắn, điều gì em mới chỉ đoán?'
+    intro: 'Em cho mình biết nguyên nhân em nghĩ tới và kết quả em mong muốn nhé.'
   },
   {
     n: 3,
-    short: 'Giải pháp',
-    name: 'Đề xuất giải pháp',
-    title: 'Em có thể làm gì?',
-    intro:
-      'Em hãy tự nghĩ ra vài cách giải quyết trước nhé, nghĩ gì ghi nấy, chưa cần hoàn hảo. Sau đó mình sẽ cùng gợi mở thêm.'
+    short: 'Biện pháp',
+    name: 'Đề xuất biện pháp',
+    title: 'Em chọn biện pháp nào?',
+    intro: 'Mình gợi ý vài biện pháp. Em chọn cách em thấy hợp, hoặc tự thêm cách của em.'
   },
   {
     n: 4,
     short: 'Lựa chọn',
     name: 'Phân tích và lựa chọn',
     title: 'So sánh và chọn cách phù hợp',
-    intro:
-      'Mình cùng xem ưu điểm, hạn chế và hậu quả của từng cách. Em là người chọn, mình chỉ giúp em nghĩ kỹ hơn.'
+    intro: 'Mình cùng xem ưu điểm, hạn chế của từng cách. Em là người quyết định.'
   },
   {
     n: 5,
     short: 'Thực hiện',
-    name: 'Thực hiện giải pháp',
-    title: 'Chia nhỏ thành từng việc',
-    intro:
-      'Em hãy chia cách đã chọn thành các việc nhỏ, ghi thời gian và ai/cái gì có thể giúp em. Làm xong việc nào em tự đánh dấu việc đó nhé.'
+    name: 'Hướng dẫn thực hiện',
+    title: 'Mình cùng làm từng việc',
+    intro: 'Mình hướng dẫn các việc cần làm theo thứ tự. Em làm xong việc nào thì đánh dấu việc đó.'
   },
   {
     n: 6,
     short: 'Đánh giá',
-    name: 'Đánh giá và điều chỉnh',
-    title: 'Kết quả thế nào rồi?',
-    intro:
-      'Em đã thử làm như thế nào và kết quả ra sao? Mình cùng đối chiếu với mục tiêu ban đầu và rút kinh nghiệm nhé.'
+    name: 'Đánh giá và nhận xét',
+    title: 'Em thấy cách này thế nào?',
+    intro: 'Em cho mình biết em có hài lòng không. Nếu chưa, mình quay lại chọn cách khác.'
   }
 ];
 

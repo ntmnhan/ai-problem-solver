@@ -33,6 +33,8 @@ export function emptyData() {
   return {
     category: '',
     problem: '',
+    cause: '',
+    happy: '',
     known: '',
     guess: '',
     unknown: '',
@@ -262,6 +264,21 @@ export function completeStep(id, n) {
   p.steps[n].completedAt = Date.now();
   p.steps[n].needsReview = false;
   p.currentStep = Math.min(6, n + 1);
+  p.updatedAt = Date.now();
+  saveNow();
+}
+
+// Học sinh chưa hài lòng: mở lại từ bước n (các bước sau n về trạng thái chưa làm).
+export function reopenFrom(id, n, resetFn) {
+  const p = getProblem(id);
+  if (!p) return;
+  for (let i = n; i <= 6; i++) {
+    p.steps[i].status = 'not_started';
+    p.steps[i].completedAt = null;
+    p.steps[i].needsReview = false;
+  }
+  if (resetFn) resetFn(p.data);
+  p.currentStep = n;
   p.updatedAt = Date.now();
   saveNow();
 }

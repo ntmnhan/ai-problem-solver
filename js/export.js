@@ -29,7 +29,7 @@ export function buildReportModel(p, profile, opts = {}) {
   sections.push({ heading: head(1), blocks: [qa('Vấn đề em đang gặp phải là…', d.problem)] });
   sections.push({
     heading: head(2),
-    blocks: [qa('Điều đã biết', d.known), qa('Điều đang suy đoán', d.guess), qa('Điều còn chưa rõ', d.unknown), qa('Mục tiêu của em', d.goal)]
+    blocks: [qa('Theo em, nguyên nhân của vấn đề này là gì?', d.cause || [d.known, d.guess, d.unknown].filter(Boolean).join('\n')), qa('Kết quả em mong muốn đạt được là gì?', d.goal)]
   });
 
   const sols = d.solutions.filter((s) => T(s.text));
@@ -43,12 +43,13 @@ export function buildReportModel(p, profile, opts = {}) {
   });
 
   const chosen = d.solutions.find((s) => s.id === d.chosenId);
-  const rows = sols.map((s, i) => {
+  const anyPicked = sols.some((s) => s.picked);
+  const rows = sols.filter((s) => !anyPicked || s.picked).map((s, i) => {
     const a = d.analysis[s.id] || {};
-    return [String(i + 1), s.text, T(a.pros) || '-', T(a.cons) || '-', T(a.consequences) || '-', a.feasibility ? `${a.feasibility}/5` : '-'];
+    return [String(i + 1), s.text, T(a.pros) || '-', T(a.cons) || '-'];
   });
   const s4 = [];
-  if (rows.length) s4.push({ type: 'table', head: ['#', 'Phương án', 'Ưu điểm', 'Hạn chế', 'Hậu quả có thể xảy ra', 'Khả thi'], rows, widths: [5, 22, 22, 22, 22, 7] });
+  if (rows.length) s4.push({ type: 'table', head: ['#', 'Biện pháp', 'Ưu điểm', 'Hạn chế'], rows, widths: [5, 35, 30, 30] });
   else s4.push({ type: 'p', text: '(chưa có phân tích)' });
   s4.push(qa('Phương án em đã chọn', chosen ? chosen.text : ''));
   s4.push(qa('Lý do em chọn', d.reason));
@@ -58,19 +59,16 @@ export function buildReportModel(p, profile, opts = {}) {
   sections.push({
     heading: head(5),
     blocks: plan.length
-      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Thời gian dự kiến', 'Nguồn lực', 'Tình trạng (em cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, t.time || '-', t.resource || '-', TASK_STATUS[t.status] || '-']), widths: [5, 35, 20, 22, 18] }]
+      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Hướng dẫn', 'Thời gian', 'Tình trạng (em cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, t.detail || '-', t.time || '-', TASK_STATUS[t.status] || '-']), widths: [5, 25, 40, 12, 18] }]
       : [{ type: 'p', text: '(chưa có kế hoạch)' }]
   });
 
   sections.push({
     heading: head(6),
     blocks: [
-      qa('Kết quả thực tế', d.result),
-      qa('So với mục tiêu ban đầu', d.compare),
-      qa('Điều đã hiệu quả', d.worked),
-      qa('Điều cần điều chỉnh', d.adjust),
-      qa('Mức hài lòng của em (1-5)', d.satisfaction ? String(d.satisfaction) : ''),
-      qa('Kết luận cuối cùng của em', d.final)
+      qa('Em có hài lòng với cách giải quyết không?', d.happy === 'yes' ? 'Hài lòng' : d.happy === 'no' ? 'Chưa hài lòng' : ''),
+      qa('Điểm em cho (1-5)', d.satisfaction ? String(d.satisfaction) : ''),
+      qa('Nhận xét của em', d.final || [d.result, d.compare].filter(Boolean).join('\n'))
     ]
   });
 

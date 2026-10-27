@@ -14,8 +14,8 @@
 
 var SHEET_NAME = 'GopY';
 var CASE_SHEET = 'VanDe';
-var CASE_COLS = ['Mã', 'Gửi lúc', 'Cập nhật', 'Họ tên', 'Lớp', 'Trường', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Đã biết', 'Chưa rõ', 'Mục tiêu', 'Cách em chọn', 'Lý do', 'Kết quả', 'So với mục tiêu', 'Hiệu quả', 'Cần chỉnh', 'Kết luận', 'Hài lòng', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý'];
-var KEYS = ['id', 'sentAt', 'updatedAt', 'name', 'cls', 'school', 'category', 'title', 'problem', 'known', 'unknown', 'goal', 'chosen', 'reason', 'result', 'compare', 'worked', 'adjust', 'final', 'satisfaction', 'stepsDone', 'risk', 'status', 'note'];
+var CASE_COLS = ['Mã', 'Gửi lúc', 'Cập nhật', 'Họ tên', 'Lớp', 'Trường', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Nguyên nhân', 'Kết quả mong muốn', 'Biện pháp em chọn', 'Lý do', 'Kế hoạch thực hiện', 'Hài lòng', 'Điểm', 'Nhận xét', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý'];
+var KEYS = ['id', 'sentAt', 'updatedAt', 'name', 'cls', 'school', 'category', 'title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'happy', 'satisfaction', 'final', 'stepsDone', 'risk', 'status', 'note'];
 
 function safe_(v) {
   v = String(v == null ? '' : v);

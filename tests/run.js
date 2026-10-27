@@ -155,7 +155,7 @@ function gemini(obj, extra = {}) {
     const res = mockRes();
     await chat(mockReq({ step: 4, task: 'analyze', payload: { solutions: ['a'] }, messages: [] }), res);
     assert.strictEqual(res.statusCode, 200);
-    assert(sent.contents[sent.contents.length - 1].parts[0].text.includes('KHÔNG chọn phương án'));
+    assert(sent.contents[sent.contents.length - 1].parts[0].text.includes('KHÔNG chọn biện pháp'));
   });
 
   global.fetch = origFetch;

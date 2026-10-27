@@ -18,7 +18,7 @@ function csvCell(v) {
 }
 
 export function exportCsv(items) {
-  const cols = [['sentAt', 'Gửi lúc'], ['name', 'Họ tên'], ['cls', 'Lớp'], ['school', 'Trường'], ['category', 'Nhóm'], ['title', 'Tiêu đề'], ['problem', 'Vấn đề'], ['goal', 'Mục tiêu'], ['chosen', 'Cách em chọn'], ['result', 'Kết quả'], ['final', 'Kết luận'], ['risk', 'Rủi ro'], ['status', 'Trạng thái'], ['note', 'Ghi chú xử lý']];
+  const cols = [['sentAt', 'Gửi lúc'], ['name', 'Họ tên'], ['cls', 'Lớp'], ['school', 'Trường'], ['category', 'Nhóm'], ['title', 'Tiêu đề'], ['problem', 'Vấn đề'], ['cause', 'Nguyên nhân'], ['goal', 'Kết quả mong muốn'], ['chosen', 'Biện pháp chọn'], ['plan', 'Kế hoạch'], ['happy', 'Hài lòng'], ['satisfaction', 'Điểm'], ['final', 'Nhận xét'], ['risk', 'Rủi ro'], ['status', 'Trạng thái'], ['note', 'Ghi chú xử lý']];
   const lines = [cols.map((c) => csvCell(c[1])).join(',')];
   items.forEach((it) => lines.push(cols.map(([k]) => csvCell(k === 'sentAt' ? fmt(it[k]) : k === 'risk' ? (it[k] === 'concern' ? 'Cần chú ý' : '') : it[k])).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -156,10 +156,10 @@ export function render(root) {
     const body = h('div', { class: 'ad-detail' },
       it.risk === 'concern' ? h('div', { class: 'banner warn' }, icon('alert', 18), h('div', null, 'Nội dung có dấu hiệu cần quan tâm. Thầy cô nên trò chuyện trực tiếp với em.')) : null,
       h('p', { class: 'muted small' }, [it.name || 'Ẩn danh', it.cls, it.school].filter(Boolean).join(' · ') + ' · gửi ' + fmt(it.sentAt) + ' · đã làm ' + (it.stepsDone || 0) + '/6 bước'),
-      line('Vấn đề', it.problem), line('Đã biết', it.known), line('Chưa rõ', it.unknown), line('Mục tiêu', it.goal),
-      line('Cách em chọn', it.chosen), line('Lý do', it.reason), line('Kết quả', it.result), line('So với mục tiêu', it.compare),
-      line('Hiệu quả', it.worked), line('Cần chỉnh', it.adjust), line('Kết luận', it.final),
-      it.satisfaction ? line('Mức hài lòng', it.satisfaction + '/5') : null,
+      line('Vấn đề', it.problem), line('Nguyên nhân em nghĩ', it.cause), line('Kết quả em mong muốn', it.goal),
+      line('Biện pháp em chọn', it.chosen), line('Lý do chọn', it.reason), line('Kế hoạch thực hiện', it.plan),
+      line('Em có hài lòng không?', it.happy), it.satisfaction ? line('Điểm em cho', it.satisfaction + '/5') : null,
+      line('Nhận xét của em', it.final),
       h('label', { class: 'fld-cap', for: 'ad-status' }, 'Trạng thái'), sel, h('label', { class: 'fld-cap', for: 'ad-note' }, 'Ghi chú xử lý'), note);
     modal({
       title: it.title || 'Vấn đề của học sinh', body, wide: true,

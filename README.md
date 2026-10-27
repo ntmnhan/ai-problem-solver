@@ -100,3 +100,12 @@ tests/              Kiểm thử + báo cáo
   1. Dán lại `apps-script/Code.gs` mới vào Apps Script → Triển khai > Quản lý bản triển khai > Chỉnh sửa > Phiên bản mới → Triển khai. (Tạo trang tính `VanDe` tự động.)
   2. Vercel → Settings → Environment Variables: thêm `ADMIN_PASSWORD` (mật khẩu admin, dài và khó đoán) rồi Redeploy. `APPS_SCRIPT_URL`/`APPS_SCRIPT_TOKEN` dùng chung với bộ đếm.
 - Lưu ý bảo mật: bảng tính chứa dữ liệu học sinh, chỉ chia sẻ cho người có trách nhiệm; sai mật khẩu 8 lần sẽ bị khóa 15 phút.
+
+## Phiên bản 1.3.0 — Luồng 6 bước mới
+- Bước 1: chỉ nhập vấn đề (không có nút Hỏi trợ lý).
+- Bước 2: hai câu hỏi (nguyên nhân; kết quả mong muốn).
+- Bước 3: AI tự đề xuất 3 biện pháp; em chọn một hoặc nhiều cách, hoặc tự thêm; có "Gợi ý cách khác".
+- Bước 4: AI tự phân tích ưu điểm/hạn chế từng cách em chọn (sửa được); em tự quyết định chọn một cách và nêu lý do.
+- Bước 5: AI tự soạn các việc cần làm theo trình tự, kèm hướng dẫn cách làm; em đánh dấu tiến độ.
+- Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
+- Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.

@@ -90,12 +90,12 @@ export function render(root, params) {
     const chosen = d.solutions.find((s) => s.id === d.chosenId);
     return {
       title: p.title === 'Vấn đề mới' ? '' : p.title,
-      problem: d.problem, known: d.known, guess: d.guess, unknown: d.unknown, goal: d.goal,
+      problem: d.problem, cause: d.cause, goal: d.goal,
       solutions: d.solutions.map((s) => s.text),
       chosen: chosen ? chosen.text : '',
       reason: d.reason,
       plan: d.plan.filter((t) => t.text.trim()).map((t) => `${t.text}${t.time ? ' - ' + t.time : ''} (${TASK_STATUS[t.status] || ''})`),
-      result: d.result
+      final: d.final
     };
   }
 
@@ -151,14 +151,16 @@ export function render(root, params) {
   function stepReady() {
     const d = P().data;
     if (n === 1 && !d.problem.trim()) return 'Em hãy ghi vấn đề em đang gặp trước nhé.';
-    if (n === 2 && !(d.known.trim() || d.guess.trim() || d.unknown.trim())) return 'Em hãy điền ít nhất một trong ba ô: đã biết, đang đoán, chưa rõ.';
-    if (n === 3 && !d.solutions.some((s) => s.text.trim())) return 'Em hãy ghi ít nhất một phương án.';
+    if (n === 2 && !d.cause.trim()) return 'Em hãy trả lời câu hỏi nguyên nhân trước nhé.';
+    if (n === 2 && !d.goal.trim()) return 'Em hãy ghi kết quả em mong muốn nhé.';
+    if (n === 3 && !d.solutions.some((s) => s.picked && s.text.trim())) return 'Em hãy chọn ít nhất một biện pháp (chạm vào biện pháp để chọn).';
     if (n === 4) {
-      if (!d.solutions.some((s) => s.id === d.chosenId)) return 'Em hãy tự chọn một phương án ở trang cuối.';
-      if (!d.reason.trim()) return 'Em hãy viết lý do vì sao em chọn phương án đó.';
+      if (!d.solutions.some((s) => s.picked && s.id === d.chosenId)) return 'Em hãy tự chọn một biện pháp ở trang cuối.';
+      if (!d.reason.trim()) return 'Em hãy viết lý do vì sao em chọn cách đó.';
     }
-    if (n === 5 && !d.plan.some((t) => t.text.trim())) return 'Em hãy ghi ít nhất một việc nhỏ trong kế hoạch.';
-    if (n === 6 && !(d.result.trim() && d.final.trim())) return 'Em hãy điền “Kết quả thực tế” và “Kết luận của em”.';
+    if (n === 5 && !d.plan.some((t) => t.text.trim())) return 'Chưa có việc nào trong kế hoạch. Em bấm “Soạn lại” hoặc tự thêm một việc nhé.';
+    if (n === 6 && d.happy === 'no') return 'Em chưa hài lòng thì mình quay lại Bước 3 nhé.';
+    if (n === 6 && d.happy !== 'yes') return 'Em hãy cho mình biết em có hài lòng không nhé.';
     return null;
   }
 
@@ -193,7 +195,7 @@ export function render(root, params) {
         : h('span', { class: 'spacer' })
     );
     actionsEl.appendChild(
-      h('button', { type: 'button', class: 'btn btn-ask', id: 'ask-ai', onClick: openChat }, owl({ size: 26 }), h('span', null, 'Hỏi trợ lý'))
+      n === 1 ? h('span', { class: 'spacer' }) : h('button', { type: 'button', class: 'btn btn-ask', id: 'ask-ai', onClick: openChat }, owl({ size: 26 }), h('span', null, 'Hỏi trợ lý'))
     );
     let next;
     if (!isLast) next = h('button', { type: 'button', class: 'btn btn-primary', onClick: () => goPage(sub + 1) }, h('span', null, 'Tiếp'), icon('right', 18));
@@ -273,202 +275,231 @@ export function render(root, params) {
     }];
   }
 
+  function loadingPage(text) {
+    return [{ q: text, hint: 'Chờ mình một chút nhé…', mood: 'think', render: () => h('div', { class: 'wz-wait', role: 'status' }, owl({ size: 110, mood: 'think' }), h('span', { class: 'dots-anim' }, '• • •')) }];
+  }
+  function errorPage(text, retry) {
+    return [{ q: text, hint: '', mood: 'think', render: () => h('div', { class: 'wz-empty-card' }, icon('alert', 28), h('p', null, 'Trợ lý đang bận hoặc mạng chưa ổn.'), btn('Thử lại', { kind: 'primary', icon: 'refresh', onClick: retry })) }];
+  }
+  const pickedSols = () => P().data.solutions.filter((s) => s.picked && s.text.trim());
+
   function pagesStep2() {
-    const mk = (q, hint, key, label, ph, caption) => ({ q, hint, mood: 'think', render: () => textField({ label, key, placeholder: ph, caption }) });
     return [
-      mk('Điều gì em biết chắc?', 'Những chuyện đã xảy ra thật.', 'known', 'Điều em đã biết (chắc chắn)', 'Em biết chắc rằng…'),
-      mk('Điều gì em đang đoán?', 'Em nghĩ có thể, nhưng chưa chắc.', 'guess', 'Điều em đang suy đoán', 'Em đoán là…'),
-      mk('Điều gì em chưa rõ?', 'Em muốn tìm hiểu thêm điều gì?', 'unknown', 'Điều còn chưa rõ', 'Em chưa biết…'),
-      mk('Em muốn kết quả ra sao?', 'Đó là mục tiêu của em, ví dụ: làm hòa với bạn.', 'goal', 'Mục tiêu của em', 'Em muốn…')
+      { q: 'Theo em, nguyên nhân của vấn đề này là gì?', hint: 'Em nghĩ vì sao chuyện này xảy ra? Đoán cũng được.', mood: 'think', render: () => textField({ label: 'Nguyên nhân em nghĩ là…', key: 'cause', placeholder: 'Em nghĩ là vì…' }) },
+      { q: 'Kết quả em mong muốn đạt được là gì?', hint: 'Ví dụ: làm hòa với bạn, điểm môn Toán tốt hơn.', mood: 'happy', render: () => textField({ label: 'Kết quả em mong muốn là…', key: 'goal', placeholder: 'Em muốn…' }) }
     ];
   }
 
+  // ----- Bước 3: AI đề xuất khoảng 3 biện pháp, em chọn (hoặc tự thêm) -----
   function pageStep3() {
+    if (busy.suggest && !P().data.solutions.length) return loadingPage('Mình đang nghĩ vài biện pháp cho em…');
+    if (fail.suggest && !P().data.solutions.length) return errorPage('Chưa nghĩ ra được biện pháp', () => fetchSuggest());
     return [{
-      q: 'Em có thể làm gì?', hint: 'Nghĩ gì ghi nấy, chưa cần hoàn hảo.', mood: 'happy',
+      q: 'Em chọn biện pháp nào?', hint: 'Chạm để chọn một hoặc nhiều cách, hoặc tự thêm cách của em.', mood: 'happy',
       render: () => {
-        const listEl = h('div', { class: 'sol-list' });
+        const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Các biện pháp' });
         const hint = h('p', { class: 'wz-hint' });
-        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Em nghĩ ra cách nào?', 'aria-label': 'Thêm phương án' });
+        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Em có cách nào khác?', 'aria-label': 'Thêm biện pháp của em' });
         const addVi = voiceInput({ ta: addInput });
-        const ownCount = () => P().data.solutions.filter((s) => s.source !== 'ai' && s.text.trim()).length;
-        const aiBtn = btn('Nhờ AI gợi ý thêm', { icon: 'bulb', small: true, onClick: () => openSuggest(drawList) });
-
-        function addSolution(text, source) {
-          const t = String(text || '').trim();
-          if (!t) return false;
-          update((d) => { d.solutions.push({ id: store.newId('sl'), text: t.slice(0, 200), source }); });
-          drawList();
-          return true;
-        }
-
+        const moreBtn = btn('Gợi ý cách khác', { small: true, icon: 'bulb', onClick: () => fetchSuggest() });
+        moreBtn.id = 'more-sug';
+        moreBtn.disabled = busy.suggest;
         function drawList() {
           const d = P().data;
           clear(listEl);
           d.solutions.forEach((s, i) => {
-            const inp = h('input', { type: 'text', class: 'input', maxlength: 200, value: s.text, 'aria-label': `Phương án ${i + 1}` });
-            inp.addEventListener('input', () => { update((dd) => { const t = dd.solutions.find((x) => x.id === s.id); if (t) t.text = inp.value; }); checkRisk(); });
-            listEl.appendChild(h('div', { class: 'sol' },
-              h('span', { class: 'num' }, String(i + 1)), inp,
-              s.source === 'ai' ? h('span', { class: 'chip ai tiny', title: 'Gợi ý từ AI, em chọn thêm' }, 'AI') : null,
+            const on = !!s.picked;
+            listEl.appendChild(h('div', { class: 'pick-row' },
               h('button', {
-                type: 'button', class: 'icon-btn mini', 'aria-label': `Xóa phương án ${i + 1}`,
-                onClick: () => {
-                  update((dd) => {
-                    dd.solutions = dd.solutions.filter((x) => x.id !== s.id);
-                    delete dd.analysis[s.id]; delete dd.aiAnalysis[s.id];
-                    if (dd.chosenId === s.id) dd.chosenId = null;
-                  });
-                  drawList();
-                }
+                type: 'button', class: `pick ${on ? 'on' : ''}`, 'aria-pressed': on ? 'true' : 'false', 'aria-label': `${on ? 'Đã chọn' : 'Chọn'}: ${s.text}`,
+                onClick: () => { update((dd) => { const t = dd.solutions.find((x) => x.id === s.id); if (t) t.picked = !t.picked; }); drawList(); }
+              }, h('span', { class: 'num' }, on ? icon('check', 16) : String(i + 1)), h('span', { class: 'pt' }, s.text), s.source === 'ai' ? h('span', { class: 'chip ai tiny' }, 'AI') : null),
+              h('button', {
+                type: 'button', class: 'icon-btn mini', 'aria-label': `Xóa biện pháp ${i + 1}`,
+                onClick: () => { update((dd) => { dd.solutions = dd.solutions.filter((x) => x.id !== s.id); delete dd.analysis[s.id]; delete dd.aiAnalysis[s.id]; if (dd.chosenId === s.id) dd.chosenId = null; }); drawList(); }
               }, icon('trash', 16))));
           });
-          if (!d.solutions.length) listEl.appendChild(h('p', { class: 'wz-empty' }, 'Chưa có cách nào. Em thêm cách đầu tiên ở ô phía trên nhé.'));
-          aiBtn.disabled = ownCount() < 1;
-          hint.textContent = ownCount() < 1 ? 'Em tự nghĩ ít nhất 1 cách trước, rồi mới nhờ AI gợi ý thêm nhé.' : 'Càng nhiều cách càng tốt. Chưa cần chọn ở bước này.';
+          if (busy.suggest) listEl.appendChild(h('p', { class: 'ai-wait' }, owl({ size: 36, mood: 'think' }), 'Mình đang nghĩ thêm…'));
+          const c = pickedSols().length;
+          hint.textContent = c ? `Đã chọn ${c} biện pháp` : 'Chưa chọn biện pháp nào';
         }
-
-        const addNow = () => { if (addSolution(addInput.value, 'me')) { addInput.value = ''; addInput.focus(); checkRisk(); } };
+        const addNow = () => {
+          const t = addInput.value.trim();
+          if (!t) return;
+          update((dd) => { dd.solutions.push({ id: store.newId('sl'), text: t.slice(0, 200), source: 'me', picked: true }); });
+          addInput.value = ''; addInput.focus(); checkRisk(); drawList();
+        };
         addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNow(); } });
         addInput.addEventListener('input', checkRisk);
-        const w = h('div', { class: 'col grow' },
+        sugRedraw = () => { moreBtn.disabled = busy.suggest; drawList(); };
+        drawList();
+        return h('div', { class: 'col grow' },
+          listEl,
           h('div', { class: 'add-row' }, h('div', { class: 'fld-box single' }, addInput, addVi.btn), btn('Thêm', { kind: 'primary', icon: 'plus', onClick: addNow })),
           addVi.strip,
-          listEl,
-          h('div', { class: 'row-end' }, hint, aiBtn));
-        drawList();
-        return w;
+          h('div', { class: 'row-end' }, hint, moreBtn));
       }
     }];
   }
 
+  // ----- Bước 4: ưu điểm, hạn chế của từng biện pháp em đã chọn; rồi em quyết định -----
   function pagesStep4() {
-    const d0 = P().data;
-    const sols = d0.solutions;
+    const sols = pickedSols();
     if (!sols.length) {
       return [{
-        q: 'Mình chưa có cách nào để so sánh', hint: '', mood: 'think',
-        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Em hãy quay lại Bước 3 để thêm ít nhất một cách nhé.'),
+        q: 'Em chưa chọn biện pháp nào', hint: '', mood: 'think',
+        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Em hãy quay lại Bước 3 để chọn ít nhất một biện pháp nhé.'),
           h('a', { class: 'btn btn-primary', href: `#/problem/${id}/3` }, 'Về Bước 3'))
       }];
     }
+    if (busy.analyze) return loadingPage('Mình đang phân tích từng biện pháp…');
     const pages = sols.map((s, i) => ({
-      q: `Cách ${i + 1}: ${s.text}`, hint: 'Em cân nhắc ưu điểm, hạn chế và hậu quả của cách này.', mood: 'think', qclass: 'long',
-      render: () => {
-        const A = () => Object.assign({ pros: '', cons: '', consequences: '', feasibility: 0 }, P().data.analysis[s.id] || {});
-        const feas = h('div', { class: 'feas' });
-        const drawFeas = () => { clear(feas); feas.append(h('span', { class: 'fld-cap' }, 'Khả thi (1 = rất khó, 5 = rất dễ)'), seg([1, 2, 3, 4, 5], A().feasibility, (v) => { setA(s.id, { feasibility: v }); drawFeas(); }, (v) => FEAS[v - 1])); };
-        drawFeas();
-        return h('div', { class: 'col grow' },
-          areaOf(s.id, 'pros', 'Ưu điểm', 'Cách này tốt ở chỗ…'),
-          areaOf(s.id, 'cons', 'Hạn chế', 'Cách này khó ở chỗ…'),
-          areaOf(s.id, 'consequences', 'Hậu quả có thể xảy ra', 'Nếu làm thì có thể…'),
-          h('div', { class: 'row-between' }, feas, btn('AI gợi ý', { small: true, icon: 'bulb', onClick: () => openAnalyze(s.id) })));
-      }
+      q: `Cách ${i + 1}: ${s.text}`, hint: 'Đây là gợi ý của mình, em có thể sửa lại cho đúng ý em.', mood: 'think', qclass: 'long',
+      render: () => h('div', { class: 'col grow' },
+        areaOf(s.id, 'pros', 'Ưu điểm', 'Cách này tốt ở chỗ…'),
+        areaOf(s.id, 'cons', 'Hạn chế', 'Cách này khó ở chỗ…'),
+        P().data.aiAnalysis[s.id] ? null : h('div', { class: 'row-end' }, h('span', { class: 'wz-hint' }, 'Chưa có gợi ý từ AI.'), btn('Nhờ AI phân tích', { small: true, icon: 'bulb', onClick: () => fetchAnalysis(true) })))
     }));
     pages.push({
-      q: 'Em chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em.', mood: 'cheer',
+      q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em.', mood: 'cheer',
       render: () => {
-        const listEl = h('div', { class: 'pick-list', role: 'group', 'aria-label': 'Chọn một phương án' });
+        const listEl = h('div', { class: 'pick-list', role: 'group', 'aria-label': 'Chọn một biện pháp' });
         const draw = () => {
           clear(listEl);
           const d = P().data;
-          d.solutions.forEach((s, i) => {
+          pickedSols().forEach((s, i) => {
             const on = d.chosenId === s.id;
             listEl.appendChild(h('button', {
-              type: 'button', class: `pick ${on ? 'on' : ''}`, 'aria-pressed': on ? 'true' : 'false', 'aria-label': on ? `Em đã chọn: ${s.text}` : `Em chọn phương án: ${s.text}`,
+              type: 'button', class: `pick ${on ? 'on' : ''}`, 'aria-pressed': on ? 'true' : 'false', 'aria-label': on ? `Em đã chọn: ${s.text}` : `Em chọn biện pháp: ${s.text}`,
               onClick: () => { update((dd) => { dd.chosenId = dd.chosenId === s.id ? null : s.id; }); draw(); }
             }, h('span', { class: 'num' }, on ? icon('check', 16) : String(i + 1)), h('span', { class: 'pt' }, s.text)));
           });
         };
         draw();
         return h('div', { class: 'col grow' }, listEl,
-          textField({ label: 'Vì sao cách em chọn phù hợp với mục tiêu và hoàn cảnh của em?', key: 'reason', placeholder: 'Em chọn cách này vì…' }));
+          textField({ label: 'Vì sao cách em chọn phù hợp với em?', key: 'reason', placeholder: 'Em chọn cách này vì…', small: true }));
       }
     });
     return pages;
   }
 
-  function pageStep5() {
-    return [{
-      q: 'Chia nhỏ thành từng việc', hint: 'Làm xong việc nào, em tự đánh dấu việc đó.', mood: 'cheer',
+  // ----- Bước 5: AI hướng dẫn các việc cần làm theo trình tự -----
+  const TSTAT = [['todo', 'Chưa làm'], ['doing', 'Đang làm'], ['done', 'Đã xong']];
+  function pagesStep5() {
+    const d0 = P().data;
+    const chosen = d0.solutions.find((s) => s.id === d0.chosenId);
+    if (!chosen) {
+      return [{
+        q: 'Em chưa chọn cách giải quyết', hint: '', mood: 'think',
+        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Em hãy quay lại Bước 4 để chọn một cách nhé.'),
+          h('a', { class: 'btn btn-primary', href: `#/problem/${id}/4` }, 'Về Bước 4'))
+      }];
+    }
+    if (busy.plan) return loadingPage('Mình đang soạn các việc cần làm…');
+    const overview = {
+      q: 'Các việc cần làm theo thứ tự', hint: 'Bấm Tiếp để xem hướng dẫn chi tiết từng việc.', mood: 'cheer',
       render: () => {
-        const chosenEl = h('div', { class: 'chosen-note' });
-        const listEl = h('div', { class: 'plan-list' });
-        const summary = h('span', { class: 'wz-hint' });
-        const chosenText = () => { const d = P().data; const c = d.solutions.find((s) => s.id === d.chosenId); return c ? c.text : ''; };
-        const breakBtn = btn('AI gợi ý chia việc', { small: true, icon: 'bulb', onClick: () => openBreakdown(chosenText(), drawList) });
-
-        function addTask(t) {
-          update((d) => { d.plan.push(Object.assign({ id: store.newId('tk'), text: '', time: '', resource: '', status: 'todo' }, t)); });
-          drawList();
-        }
-        function drawSummary() {
-          const plan = P().data.plan.filter((t) => t.text.trim());
-          const done = plan.filter((t) => t.status === 'done').length;
-          summary.textContent = plan.length ? `Đã xong ${done}/${plan.length} việc (em tự cập nhật).` : '';
-        }
-        function drawChosen() {
-          clear(chosenEl);
-          const c = chosenText();
-          chosenEl.className = `chosen-note ${c ? '' : 'warn'}`;
-          if (c) chosenEl.append(icon('check', 16), h('span', null, h('b', null, 'Cách em chọn: '), c));
-          else chosenEl.append(icon('alert', 16), h('span', null, 'Em chưa chọn phương án ở ', h('a', { href: `#/problem/${id}/4` }, 'Bước 4'), '.'));
-          breakBtn.disabled = !c;
-        }
-        function drawList() {
+        const listEl = h('ol', { class: 'plan-ov' });
+        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Thêm việc của em (không bắt buộc)', 'aria-label': 'Thêm việc' });
+        const draw = () => {
           clear(listEl);
-          P().data.plan.forEach((t, i) => {
-            const row = h('div', { class: `task ${t.status === 'done' ? 'done' : ''}` });
-            const txt = h('input', { type: 'text', class: 'input', maxlength: 200, value: t.text, placeholder: 'Việc cần làm', 'aria-label': `Việc ${i + 1}` });
-            const time = h('input', { type: 'text', class: 'input', maxlength: 60, value: t.time, placeholder: 'Khi nào? (vd: ngày mai)', 'aria-label': `Thời gian việc ${i + 1}` });
-            const res = h('input', { type: 'text', class: 'input', maxlength: 120, value: t.resource, placeholder: 'Cần gì / nhờ ai?', 'aria-label': `Nguồn lực việc ${i + 1}` });
-            const sel = h('select', { class: 'st-sel', 'aria-label': `Trạng thái việc ${i + 1}` }, Object.entries(TASK_STATUS).map(([k, v]) => h('option', { value: k, selected: t.status === k }, v)));
-            const patch = (k, v, soft) => update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x[k] = v; }, soft);
-            txt.addEventListener('input', () => { patch('text', txt.value); drawSummary(); checkRisk(); });
-            time.addEventListener('input', () => patch('time', time.value));
-            res.addEventListener('input', () => patch('resource', res.value));
-            sel.addEventListener('change', () => { patch('status', sel.value, true); row.classList.toggle('done', sel.value === 'done'); drawSummary(); });
-            row.append(
-              h('div', { class: 'task-top' }, h('span', { class: 'num' }, String(i + 1)), txt, sel,
-                h('button', { type: 'button', class: 'icon-btn mini', 'aria-label': `Xóa việc ${i + 1}`, onClick: () => { update((dd) => { dd.plan = dd.plan.filter((y) => y.id !== t.id); }); drawList(); } }, icon('trash', 16))),
-              h('div', { class: 'task-sub' }, time, res));
-            listEl.appendChild(row);
-          });
-          if (!P().data.plan.length) listEl.appendChild(h('p', { class: 'wz-empty' }, 'Bấm “Thêm việc” để ghi việc nhỏ đầu tiên.'));
-          drawSummary();
-        }
-        drawChosen();
-        drawList();
-        return h('div', { class: 'col grow' }, chosenEl, listEl,
-          h('div', { class: 'row-between' }, btn('Thêm việc', { small: true, icon: 'plus', onClick: () => addTask({}) }), breakBtn), summary);
+          P().data.plan.forEach((t) => listEl.appendChild(h('li', { class: t.status === 'done' ? 'done' : '' }, h('span', { class: 'pt' }, t.text), t.time ? h('span', { class: 'tag-time' }, t.time) : null)));
+          if (!P().data.plan.length) listEl.appendChild(h('li', { class: 'muted' }, 'Chưa có việc nào. Em bấm “Soạn lại” hoặc tự thêm nhé.'));
+        };
+        const addNow = () => {
+          const t = addInput.value.trim();
+          if (!t) return;
+          update((dd) => { dd.plan.push({ id: store.newId('tk'), text: t.slice(0, 200), detail: '', time: '', resource: '', status: 'todo' }); });
+          addInput.value = ''; checkRisk(); goPage(0);
+        };
+        addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNow(); } });
+        draw();
+        return h('div', { class: 'col grow' },
+          h('div', { class: 'chosen-note' }, icon('check', 16), h('span', null, h('b', null, 'Cách em chọn: '), chosen.text)),
+          listEl,
+          h('div', { class: 'add-row' }, addInput, btn('Thêm', { icon: 'plus', onClick: addNow })),
+          h('div', { class: 'row-end' }, btn('Soạn lại', { small: true, icon: 'refresh', onClick: () => fetchPlan(true) })));
       }
-    }];
+    };
+    const pages = [overview];
+    P().data.plan.forEach((t, i) => pages.push({
+      q: `Việc ${i + 1}: ${t.text}`, hint: t.time ? `Thời gian dự kiến: ${t.time}` : '', mood: 'happy', qclass: 'long',
+      render: () => {
+        const stat = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Tình trạng việc này' });
+        const drawStat = () => {
+          clear(stat);
+          const cur = (P().data.plan.find((x) => x.id === t.id) || {}).status;
+          TSTAT.forEach(([k, v]) => stat.appendChild(h('button', {
+            type: 'button', class: cur === k ? 'on' : '', 'aria-pressed': cur === k ? 'true' : 'false',
+            onClick: () => { update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x.status = k; }, true); drawStat(); }
+          }, v)));
+        };
+        drawStat();
+        const body = t.detail
+          ? h('div', { class: 'how' }, h('b', null, 'Cách làm'), h('p', null, t.detail))
+          : (() => {
+            const ta = h('textarea', { placeholder: 'Em sẽ làm như sau…', 'aria-label': 'Cách em sẽ làm việc này', maxlength: 600 });
+            ta.addEventListener('input', () => { update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x.detail = ta.value; }); checkRisk(); });
+            const vi = voiceInput({ ta });
+            return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, 'Cách em sẽ làm việc này'), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
+          })();
+        return h('div', { class: 'col grow' }, body,
+          t.resource ? h('div', { class: 'chosen-note' }, icon('users', 16), h('span', null, h('b', null, 'Cần: '), t.resource)) : null,
+          h('div', { class: 'fld-cap' }, 'Em đã làm việc này chưa? (em tự cập nhật)'), stat);
+      }
+    }));
+    return pages;
+  }
+
+  // ----- Bước 6: em đánh giá cách giải quyết; chưa hài lòng thì quay lại Bước 3 -----
+  async function redoFromStep3() {
+    const ok = await confirmDialog({
+      title: 'Quay lại Bước 3?',
+      text: 'Mình giữ lại các biện pháp cũ để em chọn lại hoặc thêm cách mới. Kế hoạch và đánh giá hiện tại sẽ được làm mới.',
+      okLabel: 'Quay lại Bước 3', cancelLabel: 'Ở lại'
+    });
+    if (!ok) return;
+    store.reopenFrom(id, 3, (d) => {
+      d.chosenId = null; d.reason = ''; d.plan = []; d.aiPlan = []; d.happy = ''; d.satisfaction = 0; d.final = '';
+      d.solutions.forEach((s) => { s.picked = false; });
+    });
+    location.hash = `#/problem/${id}/3`;
   }
 
   function pagesStep6() {
-    const goal = P().data.goal.trim();
-    const goalNote = goal ? h('div', { class: 'chosen-note' }, icon('target', 16), h('span', null, h('b', null, 'Mục tiêu ban đầu: '), goal)) : null;
+    const d0 = P().data;
+    const chosen = d0.solutions.find((s) => s.id === d0.chosenId);
     return [
-      { q: 'Kết quả thực tế thế nào?', hint: 'Em đã làm và điều gì đã xảy ra?', mood: 'think', render: () => textField({ label: 'Kết quả thực tế là gì?', key: 'result', placeholder: 'Em đã làm… và kết quả là…' }) },
-      { q: 'So với mục tiêu ban đầu?', hint: '', mood: 'think', render: () => h('div', { class: 'col grow' }, goalNote, textField({ label: 'So với mục tiêu ban đầu thì thế nào?', key: 'compare', placeholder: 'So với điều em mong muốn…' })) },
       {
-        q: 'Điều gì hiệu quả, điều gì cần chỉnh?', hint: 'Để lần sau em làm tốt hơn.', mood: 'happy',
-        render: () => h('div', { class: 'col grow' },
-          textField({ label: 'Điều gì đã hiệu quả?', key: 'worked', placeholder: 'Điều đã hiệu quả…', small: true, caption: 'Hiệu quả' }),
-          textField({ label: 'Điều gì cần điều chỉnh lần sau?', key: 'adjust', placeholder: 'Lần sau em sẽ…', small: true, caption: 'Cần điều chỉnh' }))
+        q: 'Em có hài lòng với cách giải quyết này không?', hint: chosen ? `Cách em chọn: ${chosen.text}` : '', mood: 'think', qclass: 'long',
+        render: () => {
+          const box = h('div', { class: 'col grow happy-box' });
+          const draw = () => {
+            clear(box);
+            const cur = P().data.happy;
+            box.append(
+              h('div', { class: 'happy-row', role: 'group', 'aria-label': 'Em có hài lòng không?' },
+                h('button', { type: 'button', id: 'happy-yes', class: `happy yes ${cur === 'yes' ? 'on' : ''}`, 'aria-pressed': cur === 'yes' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'yes'; }); draw(); refreshMeta(); } }, icon('heart', 26), h('span', null, 'Em hài lòng')),
+                h('button', { type: 'button', id: 'happy-no', class: `happy no ${cur === 'no' ? 'on' : ''}`, 'aria-pressed': cur === 'no' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'no'; }); draw(); refreshMeta(); } }, icon('refresh', 26), h('span', null, 'Em chưa hài lòng'))),
+              cur === 'no'
+                ? h('div', { class: 'redo-note' }, h('p', null, 'Không sao đâu em! Mình quay lại Bước 3 để chọn cách khác nhé.'), btn('Quay lại Bước 3', { kind: 'primary', icon: 'left', onClick: redoFromStep3 }))
+                : h('span'));
+          };
+          draw();
+          return box;
+        }
       },
       {
-        q: 'Em rút ra điều gì?', hint: 'Chấm mức hài lòng rồi viết kết luận của em.', mood: 'cheer',
+        q: 'Em cho điểm và viết nhận xét nhé', hint: 'Không bắt buộc, nhưng giúp mình làm tốt hơn.', mood: 'cheer',
         render: () => {
           const satEl = h('div', { class: 'feas' });
           const drawSat = () => {
             clear(satEl);
-            satEl.append(h('span', { class: 'fld-cap' }, 'Em hài lòng đến mức nào? (1 = chưa, 5 = rất hài lòng)'),
+            satEl.append(h('span', { class: 'fld-cap' }, 'Em cho mấy điểm? (1 = chưa tốt, 5 = rất tốt)'),
               seg([1, 2, 3, 4, 5], P().data.satisfaction, (v) => { update((d) => { d.satisfaction = d.satisfaction === v ? 0 : v; }); drawSat(); }));
           };
           drawSat();
-          return h('div', { class: 'col grow' }, satEl, textField({ label: 'Kết luận cuối cùng của em', key: 'final', placeholder: 'Em rút ra được điều gì từ chuyện này?' }));
+          return h('div', { class: 'col grow' }, satEl, textField({ label: 'Nhận xét của em', key: 'final', placeholder: 'Em thấy cách giải quyết này…' }));
         }
       },
       { q: 'Em có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi em tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
@@ -504,9 +535,10 @@ export function render(root, params) {
           consent: true, id,
           name: nameI.value, cls: clsI.value, school: schI.value,
           category: d.category, title: P().title,
-          problem: d.problem, known: d.known, unknown: d.unknown, goal: d.goal,
+          problem: d.problem, cause: d.cause, goal: d.goal,
           chosen: ch ? ch.text : '', reason: d.reason,
-          result: d.result, compare: d.compare, worked: d.worked, adjust: d.adjust, final: d.final,
+          plan: d.plan.filter((t) => t.text.trim()).map((t, i) => `${i + 1}. ${t.text}${t.time ? ' (' + t.time + ')' : ''}${t.detail ? ': ' + t.detail : ''}`).join('\n'),
+          happy: d.happy, final: d.final,
           satisfaction: d.satisfaction, stepsDone: store.stepsDone(P())
         });
         store.markShared(id, { at: (r && r.at) || Date.now(), name: nameI.value.trim(), cls: clsI.value.trim(), school: schI.value.trim() });
@@ -528,137 +560,70 @@ export function render(root, params) {
       h('p', { class: 'muted small share-note' }, 'Em có thể bỏ trống họ tên để ẩn danh. Nếu không muốn gửi, em bấm “Xong bước này” là được.'));
   }
 
-  // ---------- Khay gợi ý của AI (không chiếm chỗ màn hình chính) ----------
-  function openSuggest(onChange) {
-    const body = h('div', { class: 'ai-pane' });
-    let busy = false;
-    let intro = '';
-    let risk = 'none';
-    const draw = () => {
-      clear(body);
-      if (risk !== 'none') body.appendChild(safetyCard(risk));
-      if (busy) { body.appendChild(h('p', { class: 'ai-wait' }, owl({ size: 44, mood: 'think' }), 'Mình đang nghĩ…')); return; }
-      const pending = P().data.aiSuggestions.filter((x) => !x.added);
-      if (!pending.length) {
-        body.appendChild(h('p', { class: 'muted' }, 'Chưa có gợi ý nào.'));
-      } else {
-        body.appendChild(h('p', { class: 'muted small' }, intro || 'Đây chỉ là gợi ý, em là người quyết định. Em chỉ thêm cách em thấy phù hợp.'));
-        pending.forEach((sug) => body.appendChild(h('div', { class: 'suggest-row' }, h('span', null, sug.text),
-          btn('Thêm', { small: true, icon: 'plus', onClick: () => {
-            update((d) => { const t = d.aiSuggestions.find((x) => x.id === sug.id); if (t) t.added = true; }, true);
-            update((d) => { d.solutions.push({ id: store.newId('sl'), text: sug.text.slice(0, 200), source: 'ai' }); });
-            onChange && onChange(); draw();
-          } }))));
-      }
-      body.appendChild(btn(pending.length ? 'Gợi ý cách khác' : 'Nhờ AI gợi ý', { small: true, icon: 'refresh', onClick: ask }));
-    };
-    async function ask() {
-      busy = true; draw();
-      const res = await aiTask('suggest_options', { existing: P().data.solutions.map((s) => s.text) });
-      busy = false;
-      if (res) {
-        intro = String(res.intro || '');
-        risk = res.risk || 'none';
-        const opts = (Array.isArray(res.options) ? res.options : []).map((t) => String(t).trim()).filter(Boolean).slice(0, 6);
-        update((d) => { d.aiSuggestions = opts.map((t) => ({ id: store.newId('sg'), text: t.slice(0, 200), added: false })); }, true);
-        if (!opts.length) toast('Mình chưa nghĩ ra thêm cách nào. Em thử nói rõ hơn với trợ lý nhé.');
-      }
-      draw();
-    }
-    modal({ title: 'Gợi ý từ trợ lý', titleIcon: owl({ size: 28 }), body, variant: 'sheet', actions: [] });
-    if (P().data.aiSuggestions.some((x) => !x.added)) draw(); else ask();
+  // ---------- AI tự chạy ở các bước 3, 4, 5 (không cần em bấm) ----------
+  const busy = { suggest: false, analyze: false, plan: false };
+  const fail = { suggest: false, analyze: false, plan: false };
+  let alive = true;
+  let sugRedraw = null;
+  const refreshPages = () => { if (alive) goPage(sub); };
+
+  async function fetchSuggest() {
+    if (busy.suggest) return;
+    busy.suggest = true; fail.suggest = false;
+    if (P().data.solutions.length) { if (sugRedraw) sugRedraw(); } else refreshPages();
+    const res = await aiTask('suggest_options', { existing: P().data.solutions.map((s) => s.text) });
+    busy.suggest = false;
+    if (!alive) return;
+    if (res) {
+      const opts = (Array.isArray(res.options) ? res.options : []).map((t) => String(t).trim()).filter(Boolean).slice(0, 3);
+      update((d) => { opts.forEach((t) => d.solutions.push({ id: store.newId('sl'), text: t.slice(0, 200), source: 'ai', picked: false })); }, true);
+      if (!opts.length) fail.suggest = true;
+    } else fail.suggest = true;
+    refreshPages();
   }
 
-  function openAnalyze(sid) {
-    const body = h('div', { class: 'ai-pane' });
-    let busy = false;
-    let risk = 'none';
-    let note = '';
-    const appendTo = (key, items) => {
-      const cur = (P().data.analysis[sid] || {})[key] || '';
-      const add = (Array.isArray(items) ? items : [items]).map((x) => String(x).trim()).filter(Boolean).filter((x) => !cur.includes(x));
-      if (add.length) setA(sid, { [key]: (cur ? cur.trimEnd() + '\n' : '') + add.map((x) => '- ' + x).join('\n') });
-    };
-    const draw = () => {
-      clear(body);
-      if (risk !== 'none') body.appendChild(safetyCard(risk));
-      if (busy) { body.appendChild(h('p', { class: 'ai-wait' }, owl({ size: 44, mood: 'think' }), 'Mình đang nghĩ…')); return; }
-      const ai = P().data.aiAnalysis[sid];
-      if (!ai) { body.appendChild(h('p', { class: 'muted' }, 'Chưa có gợi ý.')); body.appendChild(btn('Nhờ AI gợi ý', { small: true, icon: 'bulb', onClick: ask })); return; }
-      body.appendChild(h('p', { class: 'muted small' }, note || 'Đây chỉ là gợi ý để em tham khảo, em tự cân nhắc theo mục tiêu và hoàn cảnh của mình nhé.'));
-      if (ai.pros && ai.pros.length) body.appendChild(h('div', null, h('strong', null, 'Ưu điểm'), h('ul', null, ai.pros.map((x) => h('li', null, x)))));
-      if (ai.cons && ai.cons.length) body.appendChild(h('div', null, h('strong', null, 'Hạn chế'), h('ul', null, ai.cons.map((x) => h('li', null, x)))));
-      if (ai.consequences) body.appendChild(h('p', null, h('strong', null, 'Hậu quả: '), ai.consequences));
-      body.appendChild(h('div', { class: 'row' },
-        btn('Chép vào ghi chú của em', { small: true, kind: 'primary', icon: 'copy', onClick: () => {
-          appendTo('pros', ai.pros); appendTo('cons', ai.cons); appendTo('consequences', ai.consequences);
-          toast('Đã chép. Em xem và sửa lại ở trang này nhé.', 'ok');
-          closeSheet(); goPage(sub);
-        } })));
-    };
-    let closeSheet = () => {};
-    async function ask() {
-      busy = true; draw();
-      const sols = P().data.solutions.slice(0, 8);
-      const res = await aiTask('analyze', { solutions: sols.map((s) => s.text) });
-      busy = false;
-      if (res) {
-        const items = Array.isArray(res.items) ? res.items : [];
-        update((d) => {
-          sols.forEach((s, i) => {
-            const it = items[i];
-            if (it) d.aiAnalysis[s.id] = { pros: (it.pros || []).map(String).slice(0, 4), cons: (it.cons || []).map(String).slice(0, 4), consequences: String(it.consequences || '') };
-          });
-        }, true);
-        note = String(res.note || '');
-        risk = res.risk || 'none';
-      }
-      draw();
-    }
-    closeSheet = modal({ title: 'Gợi ý từ trợ lý', titleIcon: owl({ size: 28 }), body, variant: 'sheet', actions: [] });
-    if (P().data.aiAnalysis[sid]) draw(); else ask();
+  async function fetchAnalysis(force) {
+    const sols = pickedSols();
+    const todo = force ? sols : sols.filter((s) => !P().data.aiAnalysis[s.id]);
+    if (busy.analyze || !todo.length) return;
+    busy.analyze = true; fail.analyze = false;
+    refreshPages();
+    const res = await aiTask('analyze', { solutions: todo.map((s) => s.text) });
+    busy.analyze = false;
+    if (!alive) return;
+    if (res && Array.isArray(res.items)) {
+      const bullets = (arr) => (Array.isArray(arr) ? arr : []).map((x) => String(x).trim()).filter(Boolean).slice(0, 4).map((x) => '- ' + x).join('\n');
+      update((d) => {
+        todo.forEach((s, i) => {
+          const it = res.items[i];
+          if (!it) return;
+          const cur = d.analysis[s.id] || {};
+          d.analysis[s.id] = Object.assign({ pros: '', cons: '', consequences: '', feasibility: 0 }, cur, { pros: bullets(it.pros), cons: bullets(it.cons) });
+          d.aiAnalysis[s.id] = true;
+        });
+      }, true);
+    } else fail.analyze = true;
+    refreshPages();
   }
 
-  function openBreakdown(chosen, onChange) {
-    if (!chosen) return;
-    const body = h('div', { class: 'ai-pane' });
-    let busy = false;
-    let note = '';
-    let risk = 'none';
-    const draw = () => {
-      clear(body);
-      if (risk !== 'none') body.appendChild(safetyCard(risk));
-      if (busy) { body.appendChild(h('p', { class: 'ai-wait' }, owl({ size: 44, mood: 'think' }), 'Mình đang nghĩ…')); return; }
-      const pending = P().data.aiPlan.filter((x) => !x.added);
-      if (!pending.length) body.appendChild(h('p', { class: 'muted' }, 'Chưa có gợi ý nào.'));
-      else {
-        body.appendChild(h('p', { class: 'muted small' }, note || 'Em chỉnh lại cho hợp với mình nhé.'));
-        pending.forEach((it) => body.appendChild(h('div', { class: 'suggest-row' },
-          h('span', null, it.text, it.time ? h('span', { class: 'muted small' }, ` · ${it.time}`) : null),
-          btn('Thêm', { small: true, icon: 'plus', onClick: () => {
-            update((d) => { const x = d.aiPlan.find((y) => y.id === it.id); if (x) x.added = true; }, true);
-            update((d) => { d.plan.push({ id: store.newId('tk'), text: it.text, time: it.time, resource: it.resource, status: 'todo' }); });
-            onChange && onChange(); draw();
-          } }))));
-      }
-      body.appendChild(btn(pending.length ? 'Gợi ý cách khác' : 'Nhờ AI gợi ý', { small: true, icon: 'refresh', onClick: ask }));
-    };
-    async function ask() {
-      busy = true; draw();
-      const res = await aiTask('breakdown', { chosen });
-      busy = false;
-      if (res) {
-        note = String(res.note || '');
-        risk = res.risk || 'none';
-        const items = (Array.isArray(res.items) ? res.items : []).slice(0, 8).map((it) => ({
-          id: store.newId('ap'), text: String(it.text || '').slice(0, 200), time: String(it.time || '').slice(0, 60), resource: String(it.resource || '').slice(0, 120), added: false
-        })).filter((x) => x.text);
-        update((d) => { d.aiPlan = items; }, true);
-      }
-      draw();
+  async function fetchPlan(force) {
+    const d = P().data;
+    const chosen = d.solutions.find((s) => s.id === d.chosenId);
+    if (busy.plan || !chosen) return;
+    if (force && d.plan.some((t) => t.status !== 'todo')) {
+      const ok = await confirmDialog({ title: 'Soạn lại kế hoạch?', text: 'Các việc em đã đánh dấu sẽ bị thay bằng kế hoạch mới.', okLabel: 'Soạn lại', cancelLabel: 'Giữ nguyên' });
+      if (!ok) return;
     }
-    modal({ title: 'Gợi ý từ trợ lý', titleIcon: owl({ size: 28 }), body, variant: 'sheet', actions: [] });
-    if (P().data.aiPlan.some((x) => !x.added)) draw(); else ask();
+    busy.plan = true; fail.plan = false;
+    refreshPages();
+    const res = await aiTask('breakdown', { chosen: chosen.text });
+    busy.plan = false;
+    if (!alive) return;
+    const items = res && Array.isArray(res.items)
+      ? res.items.slice(0, 6).map((it) => ({ id: store.newId('tk'), text: String(it.text || '').slice(0, 200), detail: String(it.detail || '').slice(0, 600), time: String(it.time || '').slice(0, 60), resource: String(it.resource || '').slice(0, 120), status: 'todo' })).filter((x) => x.text)
+      : [];
+    if (items.length) update((dd) => { dd.plan = items; dd.aiPlan = []; }, true); else fail.plan = true;
+    refreshPages();
   }
 
   // ---------- Khay trò chuyện với trợ lý ----------
@@ -780,7 +745,7 @@ export function render(root, params) {
   // ---------- Dựng trang ----------
   let pageList = [];
   function buildPages() {
-    pageList = [pageStep1, pagesStep2, pageStep3, pagesStep4, pageStep5, pagesStep6][n - 1]();
+    pageList = [pageStep1, pagesStep2, pageStep3, pagesStep4, pagesStep5, pagesStep6][n - 1]();
   }
 
   function goPage(i) {
@@ -806,8 +771,13 @@ export function render(root, params) {
   }
 
   goPage(0);
+  // AI tự chạy khi em vào bước cần (chỉ khi chưa có nội dung)
+  if (n === 3 && !P().data.solutions.length) fetchSuggest();
+  if (n === 4) fetchAnalysis(false);
+  if (n === 5 && !P().data.plan.length && P().data.chosenId) fetchPlan(false);
 
   return () => {
+    alive = false;
     document.body.classList.remove('wiz');
     voice.stopAll();
   };

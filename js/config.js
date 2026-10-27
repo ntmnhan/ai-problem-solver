@@ -3,18 +3,20 @@ export const CONFIG = {
   name: 'AI Problem Solver',
   tagline: 'Trợ lý giải quyết vấn đề thực tiễn',
   slogan: 'AI hỗ trợ tư duy, không thay thế quyết định của học sinh.',
-  version: '12',
+  version: '13',
   releaseDate: '27/10/2026',
   // Điền địa chỉ chính thức (https://...) nếu muốn cố định URL của mã QR.
   // Để trống: dùng địa chỉ đang mở nếu là https và không phải localhost.
   siteUrl: '',
   // Tên nhóm thực hiện (chỉ hiển thị khi chủ dự án xác nhận). Để trống thì ẩn.
   teamName: '',
+  schoolName: 'Trường THCS Gò Vấp',
+  creditNames: 'Nguyễn Trần Hoàng Phúc và Nguyễn Chí Phong',
   // Thông tin tác giả (hiển thị ở trang Giới thiệu).
   authorsHeading: 'Dự án nghiên cứu khoa học dành cho học sinh THCS',
   authors: [
-    { role: 'Học sinh thực hiện', name: 'Nguyễn Trần Hoàng Phúc', sub: 'Học sinh THCS' },
-    { role: 'Học sinh thực hiện', name: 'Nguyễn Chí Phong', sub: 'Học sinh THCS' },
+    { role: 'Học sinh thực hiện', name: 'Nguyễn Trần Hoàng Phúc', sub: 'Học sinh Trường THCS Gò Vấp' },
+    { role: 'Học sinh thực hiện', name: 'Nguyễn Chí Phong', sub: 'Học sinh Trường THCS Gò Vấp' },
     { role: 'Giáo viên hướng dẫn', name: 'Nguyễn Thị Phương Lan', sub: 'Cố vấn sư phạm & nghiên cứu', teacher: true }
   ],
   hotline: { children: '111', police: '113', ambulance: '115' }

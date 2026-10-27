@@ -964,6 +964,7 @@ def run():
             expect(page.get_by_text('gói miễn phí').first).to_be_visible()
             expect(page.get_by_text('Cơ sở tham khảo')).to_be_visible()
             expect(page.get_by_role('heading', name='Thông tin tác giả')).to_be_visible()
+            expect(page.get_by_text('Học sinh Trường THCS Gò Vấp').first).to_be_visible()
             ctx.close()
         record('PR-03', 'Trang Hướng dẫn sử dụng gồm cách dùng 6 bước, quyền riêng tư (dữ liệu, gửi AI, bộ đếm), an toàn, cơ sở tham khảo, tác giả; đường dẫn cũ chuyển về', t_guide_page)
 

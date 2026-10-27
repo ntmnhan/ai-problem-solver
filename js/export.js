@@ -78,7 +78,7 @@ export function buildReportModel(p, profile, opts = {}) {
     title: p.title,
     meta,
     sections,
-    footnote: `Nội dung do học sinh nhập; phản hồi của AI chỉ mang tính gợi ý. Tạo bởi ${CONFIG.name} phiên bản ${CONFIG.version}.`
+    footnote: `Nội dung do học sinh nhập; phản hồi của AI chỉ mang tính gợi ý. Tạo bởi ${CONFIG.creditNames} - ${CONFIG.schoolName}.`
   };
 }
 

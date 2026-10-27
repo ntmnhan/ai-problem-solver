@@ -110,6 +110,11 @@ tests/              Kiểm thử + báo cáo
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
 
+## Phiên bản 20 — Cập nhật theo Update_01
+- Poster dự án trong trang Hướng dẫn; bấm vào xem lớn.
+- Sửa icon Hướng dẫn/Admin bị mất ở màn hình nhỏ.
+- Lời chào bằng giọng nói khi vào app (bị trình duyệt chặn thì chào ở lần chạm đầu); nút "Nghe lời chào".
+
 ## Phiên bản 19 — Tư vấn sâu hơn
 - Bước 3: gợi ý 5 biện pháp khác hướng, nhắc chọn nhiều cách; loại ý trùng.
 - Bước 4: lý do chọn không bắt buộc.

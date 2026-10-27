@@ -1,5 +1,5 @@
 import { CONFIG, STEPS } from '../config.js';
-import { h, icon, btn } from '../ui.js';
+import { h, icon, btn, modal } from '../ui.js';
 import { downloadBackup, deleteEverything } from '../actions.js';
 import { owl, badge, STEP_ICON, STEP_COLOR } from '../art.js';
 
@@ -12,12 +12,27 @@ const HOW = [
   'Em cho biết có hài lòng không (chưa hài lòng thì quay lại Bước 3), cho điểm và viết nhận xét. Em có thể nhờ thầy cô đồng hành thêm nếu em muốn.'
 ];
 
+function openPoster() {
+  modal({
+    title: 'Poster dự án', wide: true,
+    body: h('div', { class: 'poster-full' },
+      h('img', { src: 'assets/poster.jpg', alt: 'Poster dự án: Sử dụng AI Problem Solver trong phát triển năng lực giải quyết vấn đề thực tiễn cho học sinh trung học cơ sở' })),
+    actions: [{ label: 'Đóng', kind: 'primary' }]
+  });
+}
+
 export function renderGuide(root) {
   root.appendChild(
     h('div', { class: 'guide' },
       h('div', { class: 'hero', style: 'padding-top:4px' },
         h('img', { class: 'hero-logo', src: '/assets/logo.svg', alt: 'Logo AI Problem Solver' }),
         h('h1', null, 'Hướng dẫn sử dụng'), h('p', { class: 'sub' }, `${CONFIG.name} · ${CONFIG.tagline}`), h('p', { class: 'slogan' }, `“${CONFIG.slogan}”`)),
+      h('section', { class: 'card poster-card' },
+        h('h2', null, 'Poster dự án'),
+        h('button', { type: 'button', class: 'poster-btn', id: 'poster-open', 'aria-label': 'Xem poster dự án phóng to', onClick: openPoster },
+          h('img', { src: 'assets/poster.jpg', alt: 'Poster dự án: Sử dụng AI Problem Solver trong phát triển năng lực giải quyết vấn đề thực tiễn cho học sinh trung học cơ sở', loading: 'lazy', width: 900, height: 1200 })),
+        h('p', { class: 'muted small', style: 'margin:8px 0 0' }, 'Bấm vào poster để xem lớn.')
+      ),
       h('section', { class: 'card' },
         h('h2', null, 'Em dùng thế nào? (6 bước)'),
         h('ol', { class: 'how' }, STEPS.map((st, i) => h('li', null, badge(STEP_ICON[i], STEP_COLOR[i], 34), h('div', null, h('strong', null, `Bước ${st.n}. ${st.name}`), h('p', null, HOW[i]))))),

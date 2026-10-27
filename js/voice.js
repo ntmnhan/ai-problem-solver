@@ -3,7 +3,7 @@
 const SR = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
 export const supportsSTT = !!SR;
-export const supportsTTS = typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+export const supportsTTS = typeof window !== 'undefined' && !!window.speechSynthesis && 'SpeechSynthesisUtterance' in window;
 
 let rec = null;
 let listening = false;
@@ -90,7 +90,8 @@ function pickVoice() {
   return voiceCache;
 }
 export function hasViVoice() {
-  const voices = window.speechSynthesis.getVoices() || [];
+  let voices = [];
+  try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
   return voices.length === 0 ? null : voices.some(isVi); // null: chưa biết (danh sách giọng chưa tải)
 }
 

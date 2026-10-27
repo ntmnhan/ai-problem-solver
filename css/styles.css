@@ -655,7 +655,7 @@ body.wiz #toasts { top: 64px; bottom: auto; }
 .how p { margin: 2px 0 0; }
 @media (max-width: 640px) {
   .hdr-link { width: 40px; padding: 0; justify-content: center; }
-  .hdr-link span { display: none; }
+  .hdr-link > span:not(.ico) { display: none; }
   .brand span { display: none; }
   .header-in { gap: 6px; }
 }
@@ -702,3 +702,10 @@ body.wiz #toasts { top: 64px; bottom: auto; }
 .rv-chip { flex: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; min-height: 36px; background: var(--card); font-weight: 700; color: var(--muted); cursor: pointer; }
 .rv-chip.doing { background: #fff4dc; color: #8a5a00; border-color: #f0c870; }
 .rv-chip.done { background: #dcf5e6; color: #11703c; border-color: #8fd5ab; }
+
+/* v20: poster dự án + lời chào */
+.poster-btn { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--card-2, #eef3ff); cursor: zoom-in; }
+.poster-btn img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: cover; object-position: top; }
+.poster-btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.poster-full img { display: block; width: 100%; max-width: 760px; height: auto; margin: 0 auto; border-radius: 12px; }
+.hero .listen-btn { margin-top: 8px; }

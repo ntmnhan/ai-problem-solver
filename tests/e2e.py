@@ -884,8 +884,8 @@ def run():
             page.get_by_label('Kết quả em mong muốn là…').fill('Z')
             confirm_step(page)
             expect(page.locator('.pick-row')).to_have_count(5)
-            page.wait_for_function('window.__ttsSpoken.length >= 1', timeout=15000)
-            first = page.evaluate('window.__ttsSpoken[0]')
+            page.wait_for_function("window.__ttsSpoken.some(t => t.includes('Cách 1'))", timeout=15000)
+            first = page.evaluate("window.__ttsSpoken.find(t => t.includes('Cách 1'))")
             assert 'Cách 1' in first and 'Em chọn biện pháp nào' in first, first
             n0 = page.evaluate('window.__ttsSpoken.length')
             expect(page.locator('.listen-btn .lt')).to_have_text('Nghe', timeout=8000)  # đợi đọc xong (đang đọc thì nút là Dừng)
@@ -932,6 +932,50 @@ def run():
             ctx.close()
         record('SD-02', 'Máy không có giọng tiếng Việt: không đọc bằng giọng tiếng Anh, có thông báo hướng dẫn', t_no_english_voice)
 
+        def t_greeting_and_icons():
+            # 1) tự chào khi vừa vào (trình duyệt cho phép)
+            ctx, page = new_page(browser, init_scripts=[FAKE_SR])
+            page.goto(BASE + '/')
+            page.wait_for_function("window.__ttsSpoken.length >= 1", timeout=8000)
+            g = page.evaluate('window.__ttsSpoken[0]')
+            assert 'Xin chào' in g and 'AI Problem Solver' in g and 'chế độ ẩn danh' in g and 'Bắt đầu' in g and 'Cú' in g, g
+            expect(page.locator('#greet-btn')).to_be_visible()
+            ctx.close()
+            # 2) bị chặn tự phát: phát ở lần chạm đầu tiên
+            BLOCK = FAKE_SR.replace("speak(u){ window.__ttsSpoken.push(u.text);", "speak(u){ if(!window.__act){ setTimeout(()=>u.onerror&&u.onerror(),10); return; } window.__ttsSpoken.push(u.text);") + "window.addEventListener('pointerdown',()=>{window.__act=true;},true);"
+            assert BLOCK != FAKE_SR
+            ctx, page = new_page(browser, init_scripts=[BLOCK])
+            page.goto(BASE + '/')
+            page.wait_for_timeout(700)
+            assert page.evaluate('window.__ttsSpoken.length') == 0
+            page.mouse.click(5, 300)
+            page.wait_for_function("window.__ttsSpoken.length >= 1", timeout=5000)
+            ctx.close()
+            # 3) không có giọng tiếng Việt: không đọc bằng giọng Anh; icon trên thanh trên cùng hiển thị ở điện thoại
+            ctx, page = new_page(browser, (360, 740), init_scripts=[FAKE_SR.replace("getVoices(){ return []; }", "getVoices(){ return [{lang:'en-US',name:'Samantha'}]; }")])
+            page.goto(BASE + '/')
+            page.wait_for_timeout(700)
+            assert page.evaluate('window.__ttsSpoken.length') == 0
+            for sel in ['#guide-link', '#admin-link']:
+                bb = page.locator(sel + ' svg').bounding_box()
+                assert bb and bb['width'] >= 16 and bb['height'] >= 16, f'icon {sel} bị ẩn'
+            ctx.close()
+        record('GR-01', 'Lời chào bằng giọng nói: tự chào khi vào, bị chặn thì chào ở lần chạm đầu, không đọc bằng giọng Anh; icon Hướng dẫn/Admin hiển thị ở 360px', t_greeting_and_icons)
+
+        def t_poster():
+            ctx, page = new_page(browser)
+            page.goto(BASE + '/#/guide')
+            expect(page.locator('#poster-open img')).to_be_visible()
+            assert page.evaluate("document.querySelector('#poster-open img').complete") is not None
+            page.locator('#poster-open').click()
+            dlg = page.get_by_role('dialog')
+            expect(dlg.locator('img')).to_be_visible()
+            page.wait_for_function("(() => { const i = document.querySelector('[role=dialog] img'); return i && i.complete && i.naturalWidth > 500; })()", timeout=8000)
+            page.keyboard.press('Escape')
+            expect(page.get_by_role('dialog')).to_have_count(0)
+            ctx.close()
+        record('PO-01', 'Trang Hướng dẫn có poster; bấm vào hiện poster lớn, đóng lại được', t_poster)
+
         def t_voice():
             ctx, page = new_page(browser, init_scripts=[FAKE_SR])
             to_step2(page)
@@ -947,7 +991,7 @@ def run():
             expect(page.get_by_text('Mình hiểu rồi')).to_be_visible()
             expect(dlg.get_by_text('Đang phát âm thanh…')).to_be_visible()
             spoken = page.evaluate('window.__ttsSpoken')
-            assert spoken and 'Mình hiểu rồi' in spoken[0]
+            assert spoken and any('Mình hiểu rồi' in t for t in spoken), spoken
             dlg.get_by_role('button', name='Dừng đọc').click()
             expect(dlg.get_by_text('Đang phát âm thanh…')).to_have_count(0)
             # quay lại nhập văn bản

@@ -189,8 +189,10 @@ module.exports = async function handler(req, res) {
     const live = models.filter((m) => !isCool(m));
     const order = (live.length ? live : models).slice();
     let discovered = false;
+    let q429 = false; // có model báo hết lượt (429): đừng gọi lại ngay, kẻo tốn thêm lượt
     for (let pass = 0; pass < 2 && left() > 2500; pass++) {
       // Mọi model đều 404 (Google đổi/ngừng tên): hỏi Google danh sách model key này dùng được.
+      if (pass === 1 && q429) break;
       if (pass === 1 && !discovered && last.status === 404 && keys[0]) {
         discovered = true;
         const found = await discoverModels(keys[0]);
@@ -229,6 +231,7 @@ module.exports = async function handler(req, res) {
             try { detail = (await r.text()).slice(0, 300).replace(/AIza[\w-]+/g, '[key]'); } catch (e) { /* bỏ qua */ }
             console.error('Gemini lỗi', r.status, m, detail);
             last = { status: r.status, model: m };
+            if (r.status === 429) q429 = true;
             if (r.status === 400 && level < 2) { level++; continue; } // thử lại bớt cấu hình
             if (RETRY.includes(r.status)) coolOff(m, r.status);
             break;
@@ -261,6 +264,7 @@ module.exports = async function handler(req, res) {
         }
       } catch (e) { console.error('Dự phòng lỗi', e && e.name); }
     }
+    if (q429) last = { status: 429, model: last.model }; // báo đúng nguyên nhân: hết lượt, không phải 404
     return { fail: last };
   }
 

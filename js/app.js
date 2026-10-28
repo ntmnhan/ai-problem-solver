@@ -4,7 +4,7 @@ import * as store from './store.js';
 import * as voice from './voice.js';
 import { getStats, postVisit, sendFeedback } from './api.js';
 import { h, clear, icon, btn, toast, modal, closeModal } from './ui.js';
-import { downloadBackup, pickRestoreFile, openProfileModal, deleteEverything } from './actions.js';
+import { downloadBackup, openProfileModal } from './actions.js';
 import * as start from './views/start.js';
 import * as home from './views/home.js';
 import * as problem from './views/problem.js';
@@ -70,13 +70,8 @@ function renderHeader() {
     menuItem('Kho tài liệu', 'book', null, { href: '#/library', cls: currentPath === 'library' ? 'active' : '' }),
     menuItem('Mã QR chia sẻ', 'qr', null, { href: '#/qr', cls: currentPath === 'qr' ? 'active' : '' }),
     hasProfile ? menuItem('Mã của bạn', 'user', () => openProfileModal(() => route())) : null,
-    h('hr'),
-    hasProfile ? menuItem('Tải bản sao lưu', 'download', downloadBackup) : null,
-    menuItem('Khôi phục từ tệp', 'upload', () => pickRestoreFile(() => route())),
-    h('hr'),
     menuItem('Hướng dẫn sử dụng', 'info', null, { href: '#/guide', cls: currentPath === 'guide' ? 'active' : '' }),
-    hasProfile ? h('hr') : null,
-    hasProfile ? menuItem('Xóa toàn bộ dữ liệu', 'trash', () => deleteEverything(() => { location.hash = '#/start'; route(); }), { cls: 'danger' }) : null
+    null
   );
   headerEl.appendChild(
     h('div', { class: 'header-in' },
@@ -86,6 +81,7 @@ function renderHeader() {
       saveChip(),
       h('button', { type: 'button', class: 'icon-btn', id: 'theme-btn', 'aria-label': currentTheme() === 'dark' ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối', title: 'Sáng / tối', onClick: toggleTheme }, icon(currentTheme() === 'dark' ? 'sun' : 'moon', 20)),
       h('a', { class: `hdr-link ${currentPath === 'guide' ? 'active' : ''}`, id: 'guide-link', href: '#/guide', title: 'Hướng dẫn sử dụng', 'aria-label': 'Hướng dẫn sử dụng' }, icon('info', 20), h('span', null, 'Hướng dẫn')),
+      h('button', { type: 'button', class: 'hdr-link', id: 'feedback-link', title: 'Đánh giá và góp ý', 'aria-label': 'Đánh giá và góp ý', onClick: openFeedback }, icon('star', 20), h('span', null, 'Góp ý')),
       h('a', { class: `hdr-link ${currentPath === 'admin' ? 'active' : ''}`, id: 'admin-link', href: '#/admin', title: 'Quản trị (thầy cô và nhóm học sinh)', 'aria-label': 'Admin - quản trị' }, icon('lock', 20), h('span', null, 'Admin')),
       h('div', { class: 'menu-wrap' },
         h('button', {
@@ -140,21 +136,21 @@ function renderFooter() {
       ? h('span', { class: 'stat rating', id: 'rating-summary' }, h('span', { class: 'stars', 'aria-hidden': 'true' }, stars(stats.ratingAvg)), h('b', null, String(stats.ratingAvg).replace('.', ',')), `/5 (${stats.ratingCount} đánh giá)`)
       : h('span', { class: 'stat rating', id: 'rating-summary' }, 'Chưa có dữ liệu đánh giá');
   }
-  const canFeedback = !stats.loading && stats.configured !== false;
+  const authors = CONFIG.authors.map((x) => h('span', { class: 'f-author' + (x.teacher ? ' t' : '') }, h('small', null, x.role), h('b', null, x.name)));
   footerEl.appendChild(
     h('div', { class: 'footer-in' },
-      h('div', { class: 'footer-row f-main' }, counter, rating,
-        h('button', { type: 'button', class: 'link-btn', disabled: !canFeedback, title: canFeedback ? '' : 'Chức năng này chưa được cấu hình', onClick: openFeedback }, icon('star', 14), h('span', null, 'Đánh giá và góp ý')),
-        h('span', { class: 'ver' }, h('span', { class: 't-long' }, 'Phiên bản '), h('span', { class: 't-short' }), CONFIG.version)),
-      h('div', { class: 'footer-row f-extra muted small' },
-        h('span', null, `${CONFIG.name} · Cập nhật ${CONFIG.releaseDate}`, CONFIG.teamName ? ` · ${CONFIG.teamName}` : ''),
-        h('span', null, CONFIG.teamName || '')),
-      h('div', { class: 'f-extra muted small' }, CONFIG.slogan)
+      h('div', { class: 'footer-row f-main' }, counter, rating),
+      h('div', { class: 'f-extra f-team' },
+        h('div', { class: 'f-org' }, CONFIG.authorsHeading + ' · ' + CONFIG.schoolName),
+        h('div', { class: 'f-authors' }, ...authors)),
+      h('div', { class: 'f-extra f-slogan' }, CONFIG.slogan),
+      h('div', { class: 'f-ver muted small' }, h('span', { class: 'ver' }, `Phiên bản ${CONFIG.version} · Cập nhật ${CONFIG.releaseDate}`))
     )
   );
 }
 
 function openFeedback() {
+  if (stats.configured === false) { toast('Chức năng góp ý chưa được cấu hình.', 'error', 4000); return; }
   let rating = 0;
   const starsEl = h('div', { class: 'star-pick', role: 'group', 'aria-label': 'Chọn số sao' });
   const draw = () => {

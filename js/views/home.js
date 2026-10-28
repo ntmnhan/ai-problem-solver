@@ -8,17 +8,23 @@ function nextStep(p) {
   return 6;
 }
 
+function newProblem() { const p = store.createProblem(); location.hash = `#/problem/${p.id}/1`; }
+
 export function render(root) {
   const prof = store.getProfile();
   const list = h('div', { class: 'pb-list' });
+  const heroBtn = h('button', { type: 'button', class: 'btn btn-primary', onClick: newProblem }, icon('plus', 18), h('span', null, 'Vấn đề mới'));
 
   const draw = () => {
     clear(list);
     const items = store.listProblems();
+    heroBtn.classList.toggle('hidden', !items.length);
+    heroBtn.id = items.length ? 'new-problem' : 'new-problem-top';
     if (!items.length) {
       list.appendChild(h('div', { class: 'card empty' }, owl({ size: 96, mood: 'think' }),
         h('h3', null, 'Bạn chưa có vấn đề nào'),
-        h('p', null, 'Bấm “Vấn đề mới” để bắt đầu. Mình sẽ đi cùng bạn qua từng bước.')));
+        h('p', null, 'Bấm “Vấn đề mới” để bắt đầu. Mình sẽ đi cùng bạn qua từng bước.'),
+        h('button', { type: 'button', class: 'btn btn-primary', id: 'new-problem', onClick: newProblem }, icon('plus', 18), h('span', null, 'Vấn đề mới'))));
       return;
     }
     items.forEach((p) => {
@@ -68,10 +74,7 @@ export function render(root) {
         h('div', { class: 'home-hello' },
           h('h1', null, greet),
           h('p', { class: 'muted' }, prof && prof.code ? `Mã của bạn: ${prof.code} · Hôm nay bạn muốn gỡ rối chuyện gì?` : 'Hôm nay bạn muốn gỡ rối chuyện gì?')),
-        h('button', {
-          type: 'button', class: 'btn btn-primary', id: 'new-problem',
-          onClick: () => { const p = store.createProblem(); location.hash = `#/problem/${p.id}/1`; }
-        }, icon('plus', 18), h('span', null, 'Vấn đề mới'))),
+        heroBtn),
       list
     )
   );

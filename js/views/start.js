@@ -1,7 +1,6 @@
 import { CONFIG, STEPS } from '../config.js';
 import * as store from '../store.js';
 import { h, icon, btn, toast } from '../ui.js';
-import { pickRestoreFile } from '../actions.js';
 import { owl, badge, STEP_ICON, STEP_COLOR } from '../art.js';
 import { autoGreet, playGreeting, stopGreeting, isPlaying } from '../greet.js';
 
@@ -36,14 +35,13 @@ export function render(root) {
       h('section', { class: 'card start-card' },
         h('div', { class: 'start-form' },
           btn('Bắt đầu', { kind: 'primary', icon: 'right', onClick: () => { store.setProfile(); go(); } }),
-          h('p', { class: 'muted small', style: 'margin:0;text-align:center' }, 'Bấm “Bắt đầu” để chia sẻ câu chuyện của bạn với Thỏ nhé! Bạn không cần nhập họ tên hay lớp.'))
+          h('p', { class: 'muted small', style: 'margin:0;text-align:center' }, 'Bấm “Bắt đầu” để chia sẻ câu chuyện của bạn với Thỏ nhé!'))
       ),
       h('ol', { class: 'steps-preview', 'aria-label': 'Sáu bước' },
         STEPS.map((s) => h('li', null, badge(STEP_ICON[s.n - 1], STEP_COLOR[s.n - 1], 40), h('span', null, s.short)))),
       h('p', { class: 'start-note' }, icon('shield', 16),
         h('span', null, 'App không hỏi tên, lớp của bạn khi dùng. Nội dung lưu trên máy bạn; chỉ khi bạn chọn nhờ thầy cô đồng hành ở cuối Bước 6 và đồng ý thì họ tên, lớp và nội dung mới được gửi cho thầy cô. Bạn đừng ghi họ tên, số điện thoại hay địa chỉ vào nội dung nhé.')),
       h('div', { class: 'start-links' },
-        h('button', { type: 'button', class: 'link-btn', onClick: () => pickRestoreFile(() => { if (store.getProfile()) go(); else toast('Tệp không có hồ sơ, bạn bấm “Bắt đầu” để dùng mới nhé.'); }) }, 'Khôi phục từ tệp sao lưu'),
         h('a', { href: '#/guide' }, 'Hướng dẫn sử dụng'),
         h('a', { href: 'tel:111' }, 'Cần giúp đỡ? Gọi 111'))
     )

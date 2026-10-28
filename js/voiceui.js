@@ -1,6 +1,6 @@
 // Nút micro dùng chung (Voice Mode): nói → chữ hiện trong ô để bạn xem lại và sửa; không tự gửi.
 import * as voice from './voice.js';
-import { h, icon, btn, clear } from './ui.js';
+import { h, icon, btn, clear, toast } from './ui.js';
 
 export const V_LABEL = {
   listening: 'Đang nghe…', processing: 'Đang xử lý…', stopped: 'Đã dừng', speaking: 'Đang phát âm thanh…',
@@ -8,6 +8,20 @@ export const V_LABEL = {
   'no-speech': 'Mình chưa nghe thấy gì', error: 'Có lỗi khi nghe',
   waiting: 'Đang chờ micro… (nếu trình duyệt hỏi, bạn bấm Cho phép)'
 };
+
+const INAPP = /zalo|fb_iab|fban|fbav|instagram|line\/|messenger|tiktok|musical_ly/i.test(navigator.userAgent || '');
+// Giải thích rõ vì sao micro chưa dùng được.
+function reasonText(state) {
+  if (state === 'unsupported') return INAPP
+    ? 'Bạn đang mở trong Zalo/Facebook nên micro không dùng được. Hãy mở app bằng Chrome hoặc Safari, hoặc cứ gõ chữ nhé.'
+    : 'Trình duyệt này chưa hỗ trợ nói thành chữ. Bạn dùng Chrome hoặc Edge, hoặc cứ gõ chữ nhé.';
+  if (state === 'denied') return 'Micro đang bị chặn. Bạn bấm biểu tượng ổ khóa cạnh địa chỉ trang, chọn cho phép micro rồi thử lại, hoặc cứ gõ chữ nhé.';
+  if (state === 'error') return INAPP
+    ? 'Không bật được micro trong Zalo/Facebook. Hãy mở app bằng Chrome hoặc Safari nhé.'
+    : 'Không nghe được. Bạn kiểm tra micro, mạng Internet và quyền micro, hoặc cứ gõ chữ nhé.';
+  if (state === 'no-speech') return 'Mình chưa nghe thấy gì. Bạn bấm micro và nói lại gần hơn nhé.';
+  return '';
+}
 
 let current = null; // chỉ một ô được nghe tại một thời điểm
 
@@ -20,7 +34,11 @@ export function voiceInput({ ta, hint = 'Bạn xem lại chữ, sửa nếu cầ
 
   const api = { btn: micBtn, strip, setSpeaking, reset, used: false, get state() { return state; } };
 
-  function setState(s) { state = s; draw(); }
+  function setState(s) {
+    state = s; draw();
+    const t = reasonText(s);
+    if (t && s !== 'no-speech') toast(t, 'error', 6500);
+  }
 
   function draw() {
     clear(strip);
@@ -30,10 +48,7 @@ export function voiceInput({ ta, hint = 'Bạn xem lại chữ, sửa nếu cầ
     micBtn.setAttribute('aria-label', active ? 'Dừng nghe' : 'Bật Voice Mode (nói thay vì gõ)');
     if (state === 'idle') { strip.classList.add('hidden'); return; }
     strip.classList.remove('hidden');
-    const note = state === 'denied' ? 'Bạn có thể bật lại quyền micro trong cài đặt trình duyệt, hoặc cứ gõ chữ nhé.'
-      : state === 'unsupported' ? 'Bạn vẫn gõ chữ bình thường được.'
-      : state === 'error' ? 'Bạn kiểm tra micro và mạng Internet, mở app bằng Chrome/Safari (không mở trong Zalo, Facebook), hoặc cứ gõ chữ nhé.'
-      : state === 'stopped' ? hint : '';
+    const note = state === 'stopped' ? hint : reasonText(state);
     const kids = [
       h('span', { class: `voice-state ${state}` }, h('span', { class: 'dotlive' }), V_LABEL[state] || ''),
       active ? btn('Dừng nghe', { small: true, icon: 'stop', onClick: () => voice.stopListening(false) }) : null,

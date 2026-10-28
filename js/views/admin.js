@@ -3,6 +3,7 @@ import { CATEGORIES } from '../config.js';
 import { adminCall } from '../api.js';
 import { h, icon, btn, clear, toast, modal, confirmDialog } from '../ui.js';
 import { owl, CAT_COLOR } from '../art.js';
+import { downloadBackup, pickRestoreFile, deleteEverything } from '../actions.js';
 
 const STATUSES = ['Mới', 'Đang hỗ trợ', 'Đã xong'];
 const KEY = 'aips:admin-pass';
@@ -95,6 +96,18 @@ export function render(root) {
   let listEl;
   let statsEl;
 
+  // Dữ liệu lưu trên thiết bị đang dùng (chỉ hiện sau khi đăng nhập Admin)
+  function deviceData() {
+    return h('details', { class: 'gd', id: 'ad-device' },
+      h('summary', null, h('span', null, 'Dữ liệu trên thiết bị này'), icon('down', 18)),
+      h('div', { class: 'gd-body' },
+        h('p', { class: 'muted small', style: 'margin-top:0' }, 'Chỉ tác động đến dữ liệu của học sinh lưu trên máy đang mở trang này, không ảnh hưởng dữ liệu thống kê.'),
+        h('div', { class: 'row' },
+          Object.assign(btn('Tải bản sao lưu', { small: true, icon: 'download', onClick: downloadBackup }), { id: 'ad-backup' }),
+          Object.assign(btn('Khôi phục từ tệp', { small: true, icon: 'upload', onClick: () => pickRestoreFile(() => {}) }), { id: 'ad-restore' }),
+          Object.assign(btn('Xóa toàn bộ dữ liệu', { small: true, icon: 'trash', onClick: () => deleteEverything(() => {}) }), { id: 'ad-wipe' }))));
+  }
+
   function listView() {
     clear(host);
     statsEl = h('div', { class: 'ad-stats' });
@@ -110,6 +123,7 @@ export function render(root) {
         h('b', null, 'Thống kê và danh sách khác nhau thế nào? '),
         'Thống kê bên dưới tính MỌI lượt tư vấn đã hoàn thành Bước 6 (toàn bộ dữ liệu cũ và mới) (ẩn danh, không có nội dung). Danh sách các ca chỉ gồm những bạn TỰ NGUYỆN nhờ thầy cô đồng hành: bạn điền họ tên, lớp, tick đồng ý và bấm “Gửi cho thầy cô”. Chỉ thầy cô có mật khẩu này thấy họ tên, lớp và nội dung. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
       statsEl,
+      deviceData(),
       h('div', { class: 'ad-filters' },
         h('input', { type: 'search', class: 'input', placeholder: 'Tìm theo tên, lớp, mã, nội dung…', 'aria-label': 'Tìm kiếm', onInput: (e) => { f.q = e.target.value; drawList(); } }),
         select('Mọi nhóm', 'cat', CATEGORIES.map((c) => [c, c])),
@@ -160,7 +174,8 @@ export function render(root) {
       h('div', { class: 'admin-note', id: 'ad-explain' },
         h('b', null, 'Số liệu này tính thế nào? '),
         'Mỗi lượt tư vấn được ghi nhận ẩn danh khi một bạn hoàn thành Bước 6 (không có tên, lớp hay nội dung). “Gửi thầy cô” là số bạn tự nguyện nhờ thầy cô đồng hành. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
-      statsBlock(s, { noSteps: true }));
+      statsBlock(s, { noSteps: true }),
+      deviceData());
   }
 
   function drawStats() {

@@ -653,7 +653,7 @@ body.wiz #toasts { top: 64px; bottom: auto; }
 .pick-list.grow { max-height: none; flex: 1; min-height: 0; }
 
 /* ===== v1.4: Hướng dẫn / Admin trên thanh đầu trang ===== */
-.hdr-link { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--text); text-decoration: none; font-weight: 600; font-size: 0.88rem; white-space: nowrap; }
+.hdr-link { font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--text); text-decoration: none; font-weight: 600; font-size: 0.88rem; white-space: nowrap; }
 .hdr-link:hover, .hdr-link.active { border-color: var(--primary); color: var(--primary); }
 .how { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .how li { display: flex; gap: 10px; align-items: flex-start; }
@@ -766,3 +766,39 @@ body.wiz main { overflow: visible; }
 /* v35: trang cảm ơn cuối Bước 6 */
 .thanks-msg { margin: 0; font-size: 1.05rem; line-height: 1.55; font-weight: 600; }
 .share-card .input { width: 100%; }
+
+/* ===== v39: giao diện gọn, chuyên nghiệp ===== */
+.wz-actions > :last-child { margin-left: auto; }
+.start-form { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.start-form .btn { min-width: 200px; justify-content: center; }
+.empty .btn { margin-top: 12px; }
+.empty { display: flex; flex-direction: column; align-items: center; }
+/* hướng dẫn: bấm để mở */
+.gd { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 0 0 10px; overflow: hidden; }
+.gd > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; font-weight: 800; font-size: 1.02rem; min-height: 48px; }
+.gd > summary::-webkit-details-marker { display: none; }
+.gd > summary .ico { transition: transform .18s; color: var(--primary); flex: none; }
+.gd[open] > summary .ico { transform: rotate(180deg); }
+.gd[open] > summary { border-bottom: 1px solid var(--line); }
+.gd-body { padding: 12px 16px 16px; }
+.gd-body ul, .gd-body ol { margin: 0; padding-left: 20px; }
+.gd-body li { margin: 6px 0; }
+.gd-body ol.how { padding-left: 0; }
+.gd-tip { text-align: center; margin: 0 0 10px; }
+.gd .poster-btn { display: block; max-width: 360px; margin: 10px auto 0; }
+.gd .poster-btn img { width: 100%; height: auto; border-radius: 10px; }
+/* chân trang */
+.site-footer { background: var(--card); border-top: 1px solid var(--line); }
+.footer-in { text-align: center; justify-items: center; }
+.f-main { justify-content: center !important; gap: 6px 18px; }
+.f-team { display: grid; gap: 6px; justify-items: center; padding-top: 8px; border-top: 1px solid var(--line); width: 100%; }
+.f-org { font-size: 0.74rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--primary); }
+.f-authors { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+.f-author { display: inline-flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.f-author small { font-size: 0.72rem; color: var(--muted); }
+.f-author b { font-size: 0.88rem; }
+.f-slogan { text-align: center; font-style: italic; color: var(--muted); font-size: 0.86rem; width: 100%; }
+.f-ver { font-size: 0.78rem; }
+body.wiz .f-team, body.wiz .f-slogan { display: none; }
+body.wiz .f-ver { display: none; }
+body.wiz .f-main { justify-content: center !important; }

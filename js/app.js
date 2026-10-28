@@ -4,7 +4,7 @@ import * as store from './store.js';
 import * as voice from './voice.js';
 import { getStats, postVisit, sendFeedback } from './api.js';
 import { h, clear, icon, btn, toast, modal, closeModal } from './ui.js';
-import { downloadBackup, openProfileModal } from './actions.js';
+import { downloadBackup, openProfileModal, deleteEverything } from './actions.js';
 import * as start from './views/start.js';
 import * as home from './views/home.js';
 import * as problem from './views/problem.js';
@@ -70,8 +70,8 @@ function renderHeader() {
     menuItem('Kho tài liệu', 'book', null, { href: '#/library', cls: currentPath === 'library' ? 'active' : '' }),
     menuItem('Mã QR chia sẻ', 'qr', null, { href: '#/qr', cls: currentPath === 'qr' ? 'active' : '' }),
     hasProfile ? menuItem('Mã của bạn', 'user', () => openProfileModal(() => route())) : null,
-    menuItem('Hướng dẫn sử dụng', 'info', null, { href: '#/guide', cls: currentPath === 'guide' ? 'active' : '' }),
-    null
+    hasProfile ? h('hr') : null,
+    hasProfile ? menuItem('Xóa dữ liệu trên máy này', 'trash', () => deleteEverything(() => { location.hash = '#/start'; route(); }), { cls: 'danger' }) : null
   );
   headerEl.appendChild(
     h('div', { class: 'header-in' },

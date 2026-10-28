@@ -2,7 +2,7 @@
 import * as voice from './voice.js';
 import { h, icon, btn, modal } from './ui.js';
 
-const SAMPLE = 'Xin chào bạn, mình là Cú. Đây là giọng đọc bạn đã chọn.';
+const SAMPLE = 'Xin chào bạn, mình là Thỏ. Đây là giọng đọc bạn đã chọn.';
 
 export function openVoiceSettings() {
   const body = h('div', { class: 'vs' });

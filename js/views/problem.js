@@ -1,4 +1,4 @@
-// Màn hình làm việc: mỗi bước một màn hình, không cuộn trang. Chú cú hỏi một câu, bạn trả lời, bấm Tiếp.
+// Màn hình làm việc: mỗi bước một màn hình, không cuộn trang. Chú thỏ hỏi một câu, bạn trả lời, bấm Tiếp.
 // Trợ lý AI nằm trong khay "Hỏi trợ lý" (mở khi bạn cần), không chiếm chỗ của câu hỏi chính.
 import { STEPS, CATEGORIES, STATUS_LABEL, TASK_STATUS } from '../config.js';
 import * as store from '../store.js';

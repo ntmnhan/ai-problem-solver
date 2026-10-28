@@ -88,7 +88,7 @@ tests/              Kiểm thử + báo cáo
 
 
 ## Phiên bản 1.1.0
-- Giao diện mới: mỗi bước một màn hình, không cuộn trang; chú cú thông thái; chat và gợi ý AI mở dạng khung trượt; micro dùng chung ở mọi ô nhập.
+- Giao diện mới: mỗi bước một màn hình, không cuộn trang; chú thỏ thông thái; chat và gợi ý AI mở dạng khung trượt; micro dùng chung ở mọi ô nhập.
 - AI ổn định hơn: nhiều khóa/model dự phòng, nhớ model đang lỗi, tự bỏ cấu hình khi gặp lỗi 400, đọc JSON dễ tính, giảm thời gian suy nghĩ, dịch vụ dự phòng tùy chọn.
 - Kiểm tra AI: mở `/api/health` (liệt kê từng model: ok/mã lỗi, không lộ khóa).
 
@@ -177,3 +177,8 @@ tests/              Kiểm thử + báo cáo
 ## Phiên bản 1.3.1 — Tư vấn theo tài liệu tham khảo
 - Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
 - Trang "Giới thiệu" có mục "Cơ sở tham khảo".
+
+### v33
+- Đổi nhân vật đồng hành từ chú cú sang **chú thỏ** (js/art.js); lời chào đọc "với Thỏ nhé" (assets/greeting.mp3 làm lại); mã QR tự lấy địa chỉ thật (thothongthai.vercel.app) khi mở trên web.
+- v32: báo đúng lỗi hết lượt (429) thay vì 404; không gọi lặp khi hết lượt.
+- v31: thêm model dự phòng và tự dò model Gemini khả dụng khi gặp 404.

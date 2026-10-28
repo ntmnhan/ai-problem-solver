@@ -23,7 +23,7 @@ export function render(root) {
     h('div', { class: 'start' },
       h('section', { class: 'hero' },
         h('div', { class: 'hero-art' },
-          owl({ size: 132, mood: 'wave', label: 'Chú cú đồng hành đang vẫy chào' }),
+          owl({ size: 132, mood: 'wave', label: 'Chú thỏ đồng hành đang vẫy chào' }),
           h('span', { class: 'float f1' }, badge('bulb', '#f59e0b', 38)),
           h('span', { class: 'float f2' }, badge('heart', '#ec4899', 34)),
           h('span', { class: 'float f3' }, badge('book', '#3b82f6', 34))),
@@ -36,7 +36,7 @@ export function render(root) {
       h('section', { class: 'card start-card' },
         h('div', { class: 'start-form' },
           btn('Bắt đầu', { kind: 'primary', icon: 'right', onClick: () => { store.setProfile(); go(); } }),
-          h('p', { class: 'muted small', style: 'margin:0;text-align:center' }, 'Bấm “Bắt đầu” để chia sẻ câu chuyện của bạn với Cú nhé! Bạn không cần nhập họ tên hay lớp.'))
+          h('p', { class: 'muted small', style: 'margin:0;text-align:center' }, 'Bấm “Bắt đầu” để chia sẻ câu chuyện của bạn với Thỏ nhé! Bạn không cần nhập họ tên hay lớp.'))
       ),
       h('ol', { class: 'steps-preview', 'aria-label': 'Sáu bước' },
         STEPS.map((s) => h('li', null, badge(STEP_ICON[s.n - 1], STEP_COLOR[s.n - 1], 40), h('span', null, s.short)))),

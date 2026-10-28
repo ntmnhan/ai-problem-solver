@@ -1,16 +1,21 @@
-// Hình minh họa thân thiện cho học sinh: chú cú đồng hành (nhân vật gốc) và huy hiệu bước.
+// Hình minh họa thân thiện cho học sinh: chú thỏ đồng hành (nhân vật gốc) và huy hiệu bước.
 import { icon } from './ui.js';
 
 // mood: 'happy' | 'think' | 'wave' | 'cheer'
+// (Tên hàm giữ là owl để không phải sửa nhiều nơi; nhân vật hiện là chú thỏ.)
 export function owl({ size = 64, mood = 'happy', label = '' } = {}) {
   const px = { happy: [0, 1], think: [-3, -3], wave: [1, 1], cheer: [0, 0] }[mood] || [0, 1];
-  const wingR = mood === 'wave' || mood === 'cheer'
-    ? '<path d="M94 62q18-4 16-30-15 6-19 26z" fill="#1d4ed8"/>'
-    : '<path d="M96 66q12 14 2 34-14-6-14-26z" fill="#1d4ed8"/>';
-  const wingL = mood === 'cheer'
-    ? '<path d="M26 62Q8 58 10 32q15 6 19 26z" fill="#1d4ed8"/>'
-    : '<path d="M24 66Q12 80 22 100q14-6 14-26z" fill="#1d4ed8"/>';
-  const mouth = mood === 'cheer' ? '<path d="M52 72q8 8 16 0z" fill="#fff"/>' : '';
+  const fur = '#f3f6ff', line = '#6f95e6', pink = '#ffb3c6';
+  const armR = mood === 'wave' || mood === 'cheer'
+    ? `<path d="M90 84q18-4 17-28-13 5-19 22z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>`
+    : `<path d="M90 86q12 8 6 24-12-2-14-20z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const armL = mood === 'cheer'
+    ? `<path d="M30 84Q12 80 13 56q13 5 19 22z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>`
+    : `<path d="M30 86q-12 8-6 24 12-2 14-20z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>`;
+  const earTilt = mood === 'think' ? 'rotate(-8 40 30)' : '';
+  const mouth = mood === 'cheer'
+    ? '<path d="M52 72q8 9 16 0z" fill="#e0526f"/>'
+    : '<path d="M54 71q6 5 12 0" fill="none" stroke="#c0405c" stroke-width="2.2" stroke-linecap="round"/>';
   const span = document.createElement('span');
   span.className = `owl owl-${mood}`;
   if (label) span.setAttribute('role', 'img');
@@ -19,20 +24,23 @@ export function owl({ size = 64, mood = 'happy', label = '' } = {}) {
   span.style.width = size + 'px';
   span.style.height = size + 'px';
   span.innerHTML = `<svg viewBox="0 0 120 120" width="${size}" height="${size}" focusable="false">
-    <ellipse cx="60" cy="112" rx="26" ry="5" fill="#0b1b3a" opacity=".12"/>
-    <path d="M28 44L34 14 54 34z" fill="#2563eb"/><path d="M92 44L86 14 66 34z" fill="#2563eb"/>
-    <path d="M32 40L36 22 48 34z" fill="#ffb703"/><path d="M88 40L84 22 72 34z" fill="#ffb703"/>
-    <ellipse cx="60" cy="68" rx="40" ry="42" fill="#3b82f6"/>
-    ${wingL}${wingR}
-    <ellipse cx="60" cy="84" rx="25" ry="25" fill="#e6f0ff"/>
-    <path d="M47 76q6 6 13 0 6 6 13 0M45 88q7 6 15 0 8 6 15 0M50 99q5 5 10 0 5 5 10 0" fill="none" stroke="#a9c8ff" stroke-width="2.4" stroke-linecap="round"/>
-    <circle cx="44" cy="54" r="16" fill="#fff"/><circle cx="76" cy="54" r="16" fill="#fff"/>
-    <circle class="pupil" cx="${44 + px[0]}" cy="${55 + px[1]}" r="8" fill="#11233f"/>
-    <circle class="pupil" cx="${76 + px[0]}" cy="${55 + px[1]}" r="8" fill="#11233f"/>
-    <circle cx="${46 + px[0]}" cy="${52 + px[1]}" r="2.6" fill="#fff"/><circle cx="${78 + px[0]}" cy="${52 + px[1]}" r="2.6" fill="#fff"/>
-    <circle cx="31" cy="68" r="5" fill="#ff8fa3" opacity=".55"/><circle cx="89" cy="68" r="5" fill="#ff8fa3" opacity=".55"/>
-    <path d="M53 62h14l-7 13z" fill="#ffb703"/>${mouth}
-    <ellipse cx="50" cy="111" rx="9" ry="4" fill="#ffb703"/><ellipse cx="70" cy="111" rx="9" ry="4" fill="#ffb703"/>
+    <ellipse cx="60" cy="113" rx="28" ry="5" fill="#0b1b3a" opacity=".12"/>
+    <g transform="${earTilt}"><path d="M38 52C28 28 30 6 40 5c10-1 16 24 14 47z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M40 46C35 30 36 16 40 14c5 2 8 18 7 32z" fill="${pink}"/></g>
+    <path d="M82 52C92 28 90 6 80 5 70 4 64 29 66 52z" fill="${fur}" stroke="${line}" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M80 46C85 30 84 16 80 14c-5 2-8 18-7 32z" fill="${pink}"/>
+    <ellipse cx="60" cy="92" rx="27" ry="22" fill="${fur}" stroke="${line}" stroke-width="2.4"/>
+    <ellipse cx="60" cy="97" rx="15" ry="13" fill="#fff"/>
+    ${armL}${armR}
+    <ellipse cx="60" cy="62" rx="35" ry="30" fill="${fur}" stroke="${line}" stroke-width="2.4"/>
+    <circle cx="45" cy="58" r="10" fill="#fff"/><circle cx="75" cy="58" r="10" fill="#fff"/>
+    <circle class="pupil" cx="${45 + px[0]}" cy="${59 + px[1]}" r="6" fill="#11233f"/>
+    <circle class="pupil" cx="${75 + px[0]}" cy="${59 + px[1]}" r="6" fill="#11233f"/>
+    <circle cx="${47 + px[0]}" cy="${56.5 + px[1]}" r="2" fill="#fff"/><circle cx="${77 + px[0]}" cy="${56.5 + px[1]}" r="2" fill="#fff"/>
+    <circle cx="33" cy="70" r="5" fill="${pink}" opacity=".7"/><circle cx="87" cy="70" r="5" fill="${pink}" opacity=".7"/>
+    <path d="M55 66h10l-5 6z" fill="#ff8fa3"/>${mouth}
+    <path d="M44 70l-12-2M44 73l-12 3M76 70l12-2M76 73l12 3" stroke="${line}" stroke-width="1.6" stroke-linecap="round"/>
+    <ellipse cx="46" cy="112" rx="11" ry="5" fill="${fur}" stroke="${line}" stroke-width="2"/><ellipse cx="74" cy="112" rx="11" ry="5" fill="${fur}" stroke="${line}" stroke-width="2"/>
   </svg>`;
   return span;
 }

@@ -8,14 +8,14 @@
  * Lưu:
  *  - tổng số lượt truy cập (một con số),
  *  - đánh giá sao và góp ý do học sinh tự viết (trang tính "GopY"),
- *  - các vấn đề mà học sinh TỰ CHỌN gửi cho thầy cô ở bước cuối (trang tính "VanDe", gồm họ tên/lớp/trường nếu em nhập).
+ *  - các vấn đề mà học sinh TỰ CHỌN gửi cho thầy cô ở bước cuối (trang tính "VanDe", chỉ kèm MÃ ẨN DANH ngẫu nhiên, không có họ tên/lớp/trường).
  * Không bao giờ lưu hội thoại với AI. Sau khi sửa mã: Triển khai > Quản lý bản triển khai > Chỉnh sửa > Phiên bản mới.
  */
 
 var SHEET_NAME = 'GopY';
 var CASE_SHEET = 'VanDe';
-var CASE_COLS = ['Mã', 'Gửi lúc', 'Cập nhật', 'Họ tên', 'Lớp', 'Trường', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Nguyên nhân', 'Kết quả mong muốn', 'Biện pháp em chọn', 'Lý do', 'Kế hoạch thực hiện', 'Hài lòng', 'Điểm', 'Nhận xét', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý'];
-var KEYS = ['id', 'sentAt', 'updatedAt', 'name', 'cls', 'school', 'category', 'title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'happy', 'satisfaction', 'final', 'stepsDone', 'risk', 'status', 'note'];
+var CASE_COLS = ['Mã vấn đề', 'Gửi lúc', 'Cập nhật', 'Mã học sinh', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Nguyên nhân', 'Kết quả mong muốn', 'Biện pháp bạn chọn', 'Lý do', 'Kế hoạch thực hiện', 'Hài lòng', 'Điểm', 'Nhận xét', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý'];
+var KEYS = ['id', 'sentAt', 'updatedAt', 'code', 'category', 'title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'happy', 'satisfaction', 'final', 'stepsDone', 'risk', 'status', 'note'];
 
 function safe_(v) {
   v = String(v == null ? '' : v);

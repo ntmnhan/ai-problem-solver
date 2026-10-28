@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     return json(res, 503, { error: 'not_configured', message: 'Chức năng đánh giá chưa được cấu hình.' });
   }
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'ip').split(',')[0].trim();
-  if (limited(ip)) return json(res, 429, { error: 'rate_limited', message: 'Em đã gửi nhiều lần. Hãy thử lại sau nhé.' });
+  if (limited(ip)) return json(res, 429, { error: 'rate_limited', message: 'Bạn đã gửi nhiều lần. Hãy thử lại sau nhé.' });
 
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
     return json(res, 400, { error: 'bad_rating', message: 'Hãy chọn số sao từ 1 đến 5.' });
   }
   if (kind === 'idea' && !comment.trim()) {
-    return json(res, 400, { error: 'empty', message: 'Hãy viết ý kiến của em.' });
+    return json(res, 400, { error: 'empty', message: 'Hãy viết ý kiến của bạn.' });
   }
   try {
     const r = await callScript('POST', {
@@ -42,8 +42,8 @@ module.exports = async function handler(req, res) {
       comment
     });
     if (r && r.ok) return json(res, 200, { ok: true, ...r });
-    return json(res, 502, { error: 'save_failed', message: 'Chưa lưu được. Em thử lại sau nhé.' });
+    return json(res, 502, { error: 'save_failed', message: 'Chưa lưu được. Bạn thử lại sau nhé.' });
   } catch (e) {
-    return json(res, 502, { error: 'save_failed', message: 'Chưa lưu được. Em thử lại sau nhé.' });
+    return json(res, 502, { error: 'save_failed', message: 'Chưa lưu được. Bạn thử lại sau nhé.' });
   }
 };

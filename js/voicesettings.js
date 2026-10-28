@@ -1,8 +1,8 @@
-// Cài đặt giọng đọc: tốc độ, giọng nam/nữ, nghe thử. Chỉ đọc khi em bấm nút Nghe.
+// Cài đặt giọng đọc: tốc độ, giọng nam/nữ, nghe thử. Chỉ đọc khi bạn bấm nút Nghe.
 import * as voice from './voice.js';
 import { h, icon, btn, modal } from './ui.js';
 
-const SAMPLE = 'Xin chào em, mình là Cú. Đây là giọng đọc em đã chọn.';
+const SAMPLE = 'Xin chào bạn, mình là Cú. Đây là giọng đọc bạn đã chọn.';
 
 export function openVoiceSettings() {
   const body = h('div', { class: 'vs' });
@@ -17,7 +17,7 @@ export function openVoiceSettings() {
       return w;
     };
     body.append(
-      h('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'Trợ lý chỉ đọc khi em bấm nút “Nghe”. Em chọn tốc độ và giọng cho thoải mái nhé.'),
+      h('p', { class: 'muted small', style: 'margin:0 0 8px' }, 'Trợ lý chỉ đọc khi bạn bấm nút “Nghe”. Bạn chọn tốc độ và giọng cho thoải mái nhé.'),
       h('div', { class: 'fld-cap' }, 'Tốc độ nói'),
       seg(voice.RATES, voice.getRate(), (k) => voice.setRate(k), 'Tốc độ nói'),
       h('div', { class: 'fld-cap', style: 'margin-top:12px' }, 'Giọng đọc'),
@@ -25,9 +25,9 @@ export function openVoiceSettings() {
     );
     if (!voice.supportsTTS) body.appendChild(h('p', { class: 'banner info' }, 'Trình duyệt này chưa hỗ trợ đọc to.'));
     else if (vi.length === 0) {
-      body.appendChild(h('p', { class: 'banner info', id: 'vs-none' }, 'Máy này chưa có giọng đọc tiếng Việt nên mình chưa đọc to được. Em thử mở bằng Microsoft Edge (có giọng “HoaiMy” nữ, “NamMinh” nam) hoặc thêm giọng Tiếng Việt cho máy (xem Hướng dẫn sử dụng → Nghe AI đọc).'));
+      body.appendChild(h('p', { class: 'banner info', id: 'vs-none' }, 'Máy này chưa có giọng đọc tiếng Việt nên mình chưa đọc to được. Bạn thử mở bằng Microsoft Edge (có giọng “HoaiMy” nữ, “NamMinh” nam) hoặc thêm giọng Tiếng Việt cho máy (xem Hướng dẫn sử dụng → Nghe AI đọc).'));
     } else {
-      if (!hasF || !hasM) body.appendChild(h('p', { class: 'muted small', style: 'margin:8px 0 0' }, `Máy này chỉ có giọng ${hasF ? 'nữ' : hasM ? 'nam' : 'mặc định'} tiếng Việt. Muốn có đủ nam và nữ, em dùng Microsoft Edge hoặc cài thêm giọng Tiếng Việt trong Cài đặt máy.`));
+      if (!hasF || !hasM) body.appendChild(h('p', { class: 'muted small', style: 'margin:8px 0 0' }, `Máy này chỉ có giọng ${hasF ? 'nữ' : hasM ? 'nam' : 'mặc định'} tiếng Việt. Muốn có đủ nam và nữ, bạn dùng Microsoft Edge hoặc cài thêm giọng Tiếng Việt trong Cài đặt máy.`));
       if (vi.length > 1) {
         const sel = h('select', { class: 'input', 'aria-label': 'Chọn giọng cụ thể', id: 'vs-voice' }, h('option', { value: '' }, 'Tự chọn theo lựa chọn ở trên'));
         vi.forEach((v) => { const o = h('option', { value: v.name }, `${v.name}${voice.voiceGender(v) === 'f' ? ' (nữ)' : voice.voiceGender(v) === 'm' ? ' (nam)' : ''}`); sel.appendChild(o); });

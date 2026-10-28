@@ -29,13 +29,13 @@ function gemini(obj, extra = {}) {
 
 (async () => {
   await t('S-01', 'Phát hiện từ khóa nguy cơ (có dấu và không dấu)', () => {
-    assert(detectRisk('Em bị bạo lực ở nhà'));
-    assert(detectRisk('em muon chet'));
+    assert(detectRisk('Bạn bị bạo lực ở nhà'));
+    assert(detectRisk('bạn muon chet'));
     assert(detectRisk('Mình bị ba đánh đập'));
     assert(detectRisk('bi xam hai'));
-    assert(!detectRisk('Em bị điểm kém môn toán'));
+    assert(!detectRisk('Bạn bị điểm kém môn toán'));
     assert(!detectRisk('Hai bạn cãi nhau vì mượn bút'));
-    assert(!detectRisk('bí danh của em là Sóc'));
+    assert(!detectRisk('bí danh của bạn là Sóc'));
   });
 
   const chat = require('../api/chat');
@@ -59,11 +59,11 @@ function gemini(obj, extra = {}) {
   await t('A-03', 'Trả lời bình thường, key gửi qua header và không lộ ra phản hồi', async () => {
     process.env.GEMINI_API_KEY = 'SECRET-KEY';
     let seen;
-    global.fetch = async (url, init) => { seen = { url, init }; return gemini({ reply: 'Chào em! Chuyện gì đang xảy ra vậy?', risk: 'none' }); };
+    global.fetch = async (url, init) => { seen = { url, init }; return gemini({ reply: 'Chào bạn! Chuyện gì đang xảy ra vậy?', risk: 'none' }); };
     const res = mockRes();
-    await chat(mockReq({ step: 1, context: { problem: 'Em cãi nhau với bạn' }, messages: [{ role: 'user', text: 'Em cãi nhau với bạn thân' }] }), res);
+    await chat(mockReq({ step: 1, context: { problem: 'Bạn cãi nhau với bạn' }, messages: [{ role: 'user', text: 'Bạn cãi nhau với bạn thân' }] }), res);
     assert.strictEqual(res.statusCode, 200);
-    assert(res.json.reply.includes('Chào em'));
+    assert(res.json.reply.includes('Chào bạn'));
     assert(!res.body.includes('SECRET-KEY'));
     assert.strictEqual(seen.init.headers['x-goog-api-key'], 'SECRET-KEY');
     assert(!seen.url.includes('SECRET-KEY'), 'key không được nằm trong URL');
@@ -77,7 +77,7 @@ function gemini(obj, extra = {}) {
     let sent;
     global.fetch = async (u, init) => { sent = JSON.parse(init.body); return gemini({ reply: 'ok', risk: 'none' }); };
     const res = mockRes();
-    await chat(mockReq({ step: 1, messages: [{ role: 'user', text: 'Số em là 0901234567 và email an@gmail.com' }] }), res);
+    await chat(mockReq({ step: 1, messages: [{ role: 'user', text: 'Số bạn là 0901234567 và email an@gmail.com' }] }), res);
     const txt = JSON.stringify(sent.contents);
     assert(!txt.includes('0901234567'));
     assert(!txt.includes('an@gmail.com'));
@@ -85,9 +85,9 @@ function gemini(obj, extra = {}) {
   });
 
   await t('A-05', 'Từ khóa nguy cơ nâng risk lên concern dù AI trả none', async () => {
-    global.fetch = async () => gemini({ reply: 'Mình ở đây nghe em.', risk: 'none' });
+    global.fetch = async () => gemini({ reply: 'Mình ở đây nghe bạn.', risk: 'none' });
     const res = mockRes();
-    await chat(mockReq({ step: 1, messages: [{ role: 'user', text: 'Em bị bạo lực ở nhà' }] }), res);
+    await chat(mockReq({ step: 1, messages: [{ role: 'user', text: 'Bạn bị bạo lực ở nhà' }] }), res);
     assert.strictEqual(res.json.risk, 'concern');
   });
 
@@ -243,10 +243,10 @@ function gemini(obj, extra = {}) {
 
   await t('A-15', 'Chat: AI trả văn bản thường (không JSON) vẫn dùng làm câu trả lời', async () => {
     chat._cool.clear();
-    global.fetch = async () => txt('Mình nghe em đây, em kể thêm nhé.');
+    global.fetch = async () => txt('Mình nghe bạn đây, bạn kể thêm nhé.');
     const res = await ask();
     assert.strictEqual(res.statusCode, 200);
-    assert(/nghe em/.test(res.json.reply));
+    assert(/nghe bạn/.test(res.json.reply));
   });
 
   await t('A-16', 'Model lỗi 503 được tạm bỏ qua ở lượt sau', async () => {
@@ -296,11 +296,13 @@ function gemini(obj, extra = {}) {
     assert.strictEqual(res.statusCode, 400);
     assert.strictEqual(res.json.error, 'no_consent');
     res = mockRes();
-    await share(mockReq({ consent: true, id: 'pb_abc123', name: 'A', cls: '6/6', school: 'THCS', category: 'Bậy', problem: 'Em bị bạo lực ở nhà', satisfaction: 9 }), res);
+    await share(mockReq({ consent: true, id: 'pb_abc123', name: 'A', cls: '6/6', school: 'THCS', code: 'hs-ab2cd', category: 'Bậy', problem: 'Bạn bị bạo lực ở nhà', satisfaction: 9 }), res);
     assert.strictEqual(res.statusCode, 200);
     const rec = sent[0].record;
     assert.strictEqual(sent[0].action, 'share');
     assert.strictEqual(rec.risk, 'concern');
+    assert.strictEqual(rec.code, 'HS-AB2CD');
+    assert.ok(!('name' in rec) && !('cls' in rec) && !('school' in rec), 'không lưu họ tên/lớp/trường');
     assert.strictEqual(rec.category, 'Khác');
     assert.strictEqual(rec.satisfaction, 5);
     res = mockRes();
@@ -323,10 +325,12 @@ function gemini(obj, extra = {}) {
     assert.strictEqual((await call('x', { action: 'list' })).statusCode, 503);
     process.env.ADMIN_PASSWORD = 'matkhau';
     const bodies = [];
-    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: [] }) }; };
+    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: [{ id: 'pb_abc123', code: 'HS-AB2CD', name: 'Tên cũ', cls: '6/1', school: 'X', problem: 'p' }] }) }; };
     assert.strictEqual((await call('sai', { action: 'list' }, '9.9.9.1')).statusCode, 401);
     assert.strictEqual(bodies.length, 0);
-    assert.strictEqual((await call('matkhau', { action: 'list' }, '9.9.9.2')).statusCode, 200);
+    const lr = await call('matkhau', { action: 'list' }, '9.9.9.2');
+    assert.strictEqual(lr.statusCode, 200);
+    assert.deepStrictEqual(Object.keys(lr.json.items[0]).sort(), ['code', 'id', 'problem'], 'admin không bao giờ nhận họ tên/lớp/trường');
     assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Đang hỗ trợ', note: 'ok' }, '9.9.9.2')).statusCode, 200);
     assert.strictEqual(bodies[1].action, 'adminUpdate');
     assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Lạ' }, '9.9.9.2')).statusCode, 400);
@@ -334,6 +338,36 @@ function gemini(obj, extra = {}) {
     for (let i = 0; i < 8; i++) await call('sai', { action: 'list' }, '9.9.9.3');
     assert.strictEqual((await call('matkhau', { action: 'list' }, '9.9.9.3')).statusCode, 429);
     delete process.env.ADMIN_PASSWORD;
+  });
+
+  await t('C-04', '/api/admin: mật khẩu học sinh chỉ nhận thống kê tổng hợp (không mã, không nội dung), không sửa/xóa được; chưa đặt thì không đăng nhập được', async () => {
+    const admin = require('../api/admin');
+    const call = async (pw, body, ip) => { const r = mockReq(body); r.headers['x-admin-password'] = pw; r.headers['x-forwarded-for'] = ip; const res = mockRes(); await admin(r, res); return res; };
+    process.env.ADMIN_PASSWORD = 'thayco'; delete process.env.STUDENT_PASSWORD;
+    const rows = [{ id: 'pb_x1', code: 'HS-AAAAA', title: 'Tiêu đề bí mật', problem: 'Nội dung bí mật', category: 'Học tập', status: 'Mới', risk: 'concern', stepsDone: 6, satisfaction: 4, happy: 'Hài lòng', sentAt: Date.now() }];
+    const bodies = [];
+    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: rows }) }; };
+    assert.strictEqual((await call('hs', { action: 'list' }, '8.8.8.1')).statusCode, 401, 'chưa đặt STUDENT_PASSWORD thì không vào được');
+    process.env.STUDENT_PASSWORD = 'hs';
+    assert.strictEqual((await call('hs', { action: 'login' }, '8.8.8.2')).json.role, 'student');
+    assert.strictEqual((await call('thayco', { action: 'login' }, '8.8.8.2')).json.role, 'teacher');
+    const lr = await call('hs', { action: 'list' }, '8.8.8.2');
+    assert.strictEqual(lr.statusCode, 200);
+    assert.strictEqual(lr.json.role, 'student');
+    assert.ok(!('items' in lr.json), 'học sinh không nhận danh sách ca');
+    const dump = JSON.stringify(lr.json);
+    ['Tiêu đề bí mật', 'Nội dung bí mật', 'HS-AAAAA', 'pb_x1'].forEach((x) => assert.ok(!dump.includes(x), 'rò rỉ: ' + x));
+    assert.strictEqual(lr.json.summary.total, 1);
+    assert.strictEqual(lr.json.summary.concernOpen, 1);
+    assert.strictEqual(lr.json.summary.byCategory['Học tập'], 1);
+    const n0 = bodies.length;
+    assert.strictEqual((await call('hs', { action: 'update', id: 'pb_x1', status: 'Đã xong', note: 'x' }, '8.8.8.2')).statusCode, 403);
+    assert.strictEqual((await call('hs', { action: 'delete', id: 'pb_x1' }, '8.8.8.2')).statusCode, 403);
+    assert.strictEqual(bodies.length, n0, 'không được gọi kho dữ liệu khi bị từ chối');
+    const tl = await call('thayco', { action: 'list' }, '8.8.8.2');
+    assert.strictEqual(tl.json.role, 'teacher');
+    assert.strictEqual(tl.json.items[0].problem, 'Nội dung bí mật');
+    delete process.env.ADMIN_PASSWORD; delete process.env.STUDENT_PASSWORD;
   });
 
   await t('A-19', 'Lời nhắc hệ thống có cơ sở tham khảo: 6 bước, tiêu chí chọn giải pháp, VN-COP/111, UNESCO', async () => {

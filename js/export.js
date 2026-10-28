@@ -11,11 +11,7 @@ export function buildReportModel(p, profile, opts = {}) {
   const d = p.data;
   const meta = [];
   if (profile) {
-    if (profile.anonymous || !profile.name) meta.push(['Người thực hiện', `Ẩn danh (mã ${profile.code})`]);
-    else if (showName) {
-      meta.push(['Người thực hiện', profile.name]);
-      if (profile.cls) meta.push(['Lớp', profile.cls]);
-    } else meta.push(['Người thực hiện', `Ẩn danh (mã ${profile.code})`]);
+    meta.push(['Người thực hiện', `Ẩn danh (mã ${profile.code})`]);
   }
   meta.push(['Ngày tạo', formatDate(p.createdAt)]);
   meta.push(['Cập nhật gần nhất', formatDate(p.updatedAt)]);
@@ -26,10 +22,10 @@ export function buildReportModel(p, profile, opts = {}) {
   const head = (n) => `Bước ${n}. ${STEPS[n - 1].name} (${STATUS_LABEL[p.steps[n].status]})`;
   const qa = (q, a) => ({ type: 'qa', q, a: T(a) || '(chưa có nội dung)' });
 
-  sections.push({ heading: head(1), blocks: [qa('Vấn đề em đang gặp phải là…', d.problem)] });
+  sections.push({ heading: head(1), blocks: [qa('Vấn đề bạn đang gặp phải là…', d.problem)] });
   sections.push({
     heading: head(2),
-    blocks: [qa('Theo em, nguyên nhân của vấn đề này là gì?', d.cause || [d.known, d.guess, d.unknown].filter(Boolean).join('\n')), qa('Kết quả em mong muốn đạt được là gì?', d.goal)]
+    blocks: [qa('Theo bạn, nguyên nhân của vấn đề này là gì?', d.cause || [d.known, d.guess, d.unknown].filter(Boolean).join('\n')), qa('Kết quả bạn mong muốn đạt được là gì?', d.goal)]
   });
 
   const sols = d.solutions.filter((s) => T(s.text));
@@ -37,7 +33,7 @@ export function buildReportModel(p, profile, opts = {}) {
     heading: head(3),
     blocks: [
       sols.length
-        ? { type: 'bullets', items: sols.map((s) => `${s.text}${s.source === 'ai' ? ' (gợi ý từ AI, em chọn thêm)' : ' (em tự nghĩ)'}`) }
+        ? { type: 'bullets', items: sols.map((s) => `${s.text}${s.source === 'ai' ? ' (gợi ý từ AI, bạn chọn thêm)' : ' (bạn tự nghĩ)'}`) }
         : { type: 'p', text: '(chưa có phương án)' }
     ]
   });
@@ -51,26 +47,26 @@ export function buildReportModel(p, profile, opts = {}) {
   const s4 = [];
   if (rows.length) s4.push({ type: 'table', head: ['#', 'Biện pháp', 'Ưu điểm', 'Hạn chế'], rows, widths: [5, 35, 30, 30] });
   else s4.push({ type: 'p', text: '(chưa có phân tích)' });
-  s4.push(qa('Phương án em đã chọn', chosen ? chosen.text : ''));
-  if (T(d.reason)) s4.push(qa('Lý do em chọn', d.reason));
+  s4.push(qa('Phương án bạn đã chọn', chosen ? chosen.text : ''));
+  if (T(d.reason)) s4.push(qa('Lý do bạn chọn', d.reason));
   sections.push({ heading: head(4), blocks: s4 });
 
   const plan = d.plan.filter((t) => T(t.text));
   sections.push({
     heading: head(5),
     blocks: plan.length
-      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Hướng dẫn', 'Thời gian', 'Tình trạng (em cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, [t.detail || '-', t.expect ? 'Kết quả mong đợi: ' + t.expect : '', t.backup ? 'Nếu chưa được: ' + t.backup : ''].filter(Boolean).join('\n'), t.time || '-', TASK_STATUS[t.status] || '-']), widths: [5, 22, 45, 10, 18] }]
+      ? [{ type: 'table', head: ['#', 'Việc cần làm', 'Hướng dẫn', 'Thời gian', 'Tình trạng (bạn cập nhật)'], rows: plan.map((t, i) => [String(i + 1), t.text, [t.detail || '-', t.expect ? 'Kết quả mong đợi: ' + t.expect : '', t.backup ? 'Nếu chưa được: ' + t.backup : ''].filter(Boolean).join('\n'), t.time || '-', TASK_STATUS[t.status] || '-']), widths: [5, 22, 45, 10, 18] }]
       : [{ type: 'p', text: '(chưa có kế hoạch)' }]
   });
 
   const s6 = [];
   const ach = { yes: 'Đã đạt', part: 'Đạt một phần', no: 'Chưa đạt' }[d.achieved];
-  if (ach) s6.push(qa('Em đạt được kết quả mong muốn chưa?', ach));
-  s6.push(qa('Em có hài lòng với cách giải quyết không?', d.happy === 'yes' ? 'Hài lòng' : d.happy === 'no' ? 'Chưa hài lòng' : ''));
-  s6.push(qa('Điểm em cho (1-5)', d.satisfaction ? String(d.satisfaction) : ''));
+  if (ach) s6.push(qa('Bạn đạt được kết quả mong muốn chưa?', ach));
+  s6.push(qa('Bạn có hài lòng với cách giải quyết không?', d.happy === 'yes' ? 'Hài lòng' : d.happy === 'no' ? 'Chưa hài lòng' : ''));
+  s6.push(qa('Điểm bạn cho (1-5)', d.satisfaction ? String(d.satisfaction) : ''));
   if (T(d.good)) s6.push(qa('Điều đã làm tốt', d.good));
   if (T(d.better)) s6.push(qa('Điều cần làm tốt hơn', d.better));
-  if (!T(d.good) && !T(d.better)) s6.push(qa('Nhận xét của em', d.final || [d.result, d.compare].filter(Boolean).join('\n')));
+  if (!T(d.good) && !T(d.better)) s6.push(qa('Nhận xét của bạn', d.final || [d.result, d.compare].filter(Boolean).join('\n')));
   sections.push({ heading: head(6), blocks: s6 });
 
   sections.push({ heading: 'Nhận xét của giáo viên', blocks: [{ type: 'box' }] });
@@ -116,7 +112,7 @@ function loadDocx() {
     const s = document.createElement('script');
     s.src = '/vendor/docx.iife.js';
     s.onload = () => (window.docx ? resolve() : reject(new Error('Không nạp được thư viện DOCX.')));
-    s.onerror = () => { docxPromise = null; reject(new Error('Không tải được thư viện xuất DOCX. Em kiểm tra mạng rồi thử lại.')); };
+    s.onerror = () => { docxPromise = null; reject(new Error('Không tải được thư viện xuất DOCX. Bạn kiểm tra mạng rồi thử lại.')); };
     document.head.appendChild(s);
   });
   return docxPromise;

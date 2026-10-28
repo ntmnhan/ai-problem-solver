@@ -18,7 +18,7 @@ const PATTERNS = [
   /\bcat (tay|co tay)\b/,
   /\bbi (danh dap|bao luc|bao hanh|xam hai|xam pham|so mo|hiep|cuong buc|bat coc|doa giet|ep buoc)\b/,
   /\bbi (ba|me|bo|cha|anh|chi|chu|bac|di|duong|thay|co|ban|nguoi ta|nhom ban) (danh|dam|da|doa|bat nat)\b/,
-  /\b(danh|dam|da) (em|toi|minh) (rat )?(dau|chay mau|bam tim)\b/,
+  /\b(danh|dam|da) (em|ban|toi|minh) (rat )?(dau|chay mau|bam tim)\b/,
   /\bxam hai\b/,
   /\bhiep dam\b/,
   /\bdoa giet\b/,

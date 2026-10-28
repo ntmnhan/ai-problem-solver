@@ -5,7 +5,7 @@ export function render(root) {
   root.appendChild(
     h('div', null,
       h('h1', null, 'Kho tài liệu'),
-      h('p', { class: 'muted' }, 'Các tài liệu giúp em hiểu cách giải quyết vấn đề và biết tìm ai giúp đỡ.'),
+      h('p', { class: 'muted' }, 'Các tài liệu giúp bạn hiểu cách giải quyết vấn đề và biết tìm ai giúp đỡ.'),
       list)
   );
 
@@ -40,7 +40,7 @@ export function render(root) {
       );
     } catch (e) {
       clear(list);
-      list.appendChild(h('div', { class: 'banner error' }, icon('alert', 20), h('div', null, 'Chưa tải được danh sách tài liệu. Em thử lại sau nhé.')));
+      list.appendChild(h('div', { class: 'banner error' }, icon('alert', 20), h('div', null, 'Chưa tải được danh sách tài liệu. Bạn thử lại sau nhé.')));
     }
   })();
 }

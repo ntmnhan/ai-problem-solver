@@ -23,7 +23,7 @@ export function downloadBackup() {
   store.flush();
   const data = JSON.stringify(store.exportAll(), null, 2);
   downloadBlob(new Blob([data], { type: 'application/json' }), `ai-problem-solver-sao-luu-${dateStamp()}.json`);
-  toast('Đã tạo tệp sao lưu. Em hãy cất tệp ở nơi an toàn nhé.', 'ok');
+  toast('Đã tạo tệp sao lưu. Bạn hãy cất tệp ở nơi an toàn nhé.', 'ok');
 }
 
 export function pickRestoreFile(onDone) {
@@ -51,49 +51,20 @@ export function pickRestoreFile(onDone) {
 }
 
 export function openProfileModal(onSaved) {
-  const prof = store.getProfile() || { name: '', cls: '', anonymous: true, code: '' };
-  const name = h('input', { type: 'text', class: 'input', maxlength: 60, value: prof.name || '', placeholder: 'Ví dụ: Nguyễn Văn An', autocomplete: 'off' });
-  const cls = h('input', { type: 'text', class: 'input', maxlength: 20, value: prof.cls || '', placeholder: 'Ví dụ: 6/6', autocomplete: 'off' });
-  const anon = h('input', { type: 'checkbox', checked: !!prof.anonymous });
-  const sync = () => {
-    name.disabled = cls.disabled = anon.checked;
-  };
-  anon.addEventListener('change', sync);
-  sync();
+  const prof = store.getProfile() || {};
   modal({
-    title: 'Thông tin của em',
-    body: h(
-      'div',
-      null,
-      h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Họ và tên'), name),
-      h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Lớp'), cls),
-      h('label', { class: 'check' }, anon, h('span', null, 'Dùng chế độ ẩn danh (không ghi tên, lớp)')),
-      prof.code ? h('p', { class: 'muted small' }, `Mã ẩn danh của em: ${prof.code}`) : null,
-      h('p', { class: 'muted small' }, 'Thông tin này chỉ lưu trên thiết bị của em, không gửi lên máy chủ.')
-    ),
-    actions: [
-      { label: 'Hủy', kind: 'ghost' },
-      {
-        label: 'Lưu',
-        kind: 'primary',
-        onClick: () => {
-          if (!anon.checked && !name.value.trim()) {
-            toast('Em hãy nhập họ tên hoặc chọn chế độ ẩn danh.', 'error');
-            return false;
-          }
-          store.setProfile({ name: name.value, cls: cls.value, anonymous: anon.checked });
-          toast('Đã lưu thông tin.', 'ok');
-          if (onSaved) onSaved();
-        }
-      }
-    ]
+    title: 'Mã của bạn',
+    body: h('div', null,
+      h('p', { style: 'font-size:1.4rem;font-weight:800;margin:4px 0' }, prof.code || '(chưa có)'),
+      h('p', { class: 'muted small' }, 'App không hỏi họ tên, lớp hay trường của bạn. Đây là mã ngẫu nhiên, chỉ lưu trên thiết bị này. Nếu bạn chọn gửi vấn đề cho thầy cô thì thầy cô chỉ thấy mã này.')),
+    actions: [{ label: 'Đóng', kind: 'primary', onClick: () => { if (onSaved) onSaved(); } }]
   });
 }
 
 export async function deleteEverything(onDone) {
   const ok = await confirmDialog({
     title: 'Xóa toàn bộ dữ liệu?',
-    text: 'Tất cả vấn đề và thông tin của em trên thiết bị này sẽ bị xóa và không thể khôi phục (trừ khi em đã tải bản sao lưu). Em chắc chắn chứ?',
+    text: 'Tất cả vấn đề và thông tin của bạn trên thiết bị này sẽ bị xóa và không thể khôi phục (trừ khi bạn đã tải bản sao lưu). Bạn chắc chắn chứ?',
     okLabel: 'Xóa hết',
     danger: true
   });

@@ -40,7 +40,7 @@ Vào Google AI Studio → *Get API key* → tạo khóa (gói miễn phí).
 | `GEMINI_API_KEY` | khóa Gemini của bạn |
 | `GEMINI_API_KEY_2` | (không bắt buộc, nên có) khóa Gemini thứ hai tạo ở dự án Google khác để có thêm hạn mức; app tự chuyển khi khóa đầu hết lượt hoặc quá tải. |
 | `FALLBACK_API_KEY` | (không bắt buộc, nên có) khóa dịch vụ AI dự phòng miễn phí tương thích OpenAI, ví dụ Groq (console.groq.com). Kèm tùy chọn `FALLBACK_BASE_URL` (mặc định Groq) và `FALLBACK_MODEL` (mặc định `llama-3.3-70b-versatile`). |
-| `GEMINI_MODEL` | (không bắt buộc) tên model, đặt lên đầu danh sách; app luôn tự thử tiếp `gemini-3.5-flash-lite`, `gemini-3.8-flash`, rồi các model 2.5. Nếu Google đổi tên/ngừng model, chỉ cần sửa biến này. |
+| `GEMINI_MODEL` | (không bắt buộc) tên model, đặt lên đầu danh sách; app luôn tự thử tiếp `gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.6-flash`, các bí danh `-latest`, rồi model 2.5. Nếu tất cả đều 404, app tự hỏi Google (ListModels) để chọn model flash mới nhất khóa của bạn dùng được. Lưu ý: Google chỉ còn cho tài khoản cũ dùng gemini-2.5; khóa mới sẽ báo 404 với các model này. Nếu Google đổi tên/ngừng model, chỉ cần sửa biến này. |
 | `APPS_SCRIPT_URL` | URL `/exec` ở bước 2 |
 | `APPS_SCRIPT_TOKEN` | đúng chuỗi `TOKEN` ở bước 2 |
 
@@ -109,6 +109,25 @@ tests/              Kiểm thử + báo cáo
 - Bước 5: AI tự soạn các việc cần làm theo trình tự, kèm hướng dẫn cách làm; em đánh dấu tiến độ.
 - Bước 6: em chọn hài lòng / chưa hài lòng (chưa → quay lại Bước 3, giữ các biện pháp cũ), cho điểm 1-5 và nhận xét; rồi tùy chọn gửi cho thầy cô.
 - Bảng `VanDe` trên Google Sheets đổi cột (Nguyên nhân, Kết quả mong muốn, Biện pháp chọn, Kế hoạch, Hài lòng, Điểm, Nhận xét). Nếu đã tạo trang tính `VanDe` ở bản 1.2.0, hãy xóa trang tính đó (hoặc đổi tên) rồi dán lại `apps-script/Code.gs` mới và triển khai lại.
+
+## Phiên bản 30 — Phân quyền quản trị
+- Hai mật khẩu trên Vercel (Settings → Environment Variables, rồi Redeploy):
+  - `ADMIN_PASSWORD`: thầy cô — xem nội dung các ca, đổi trạng thái, ghi chú, xóa, xuất CSV.
+  - `STUDENT_PASSWORD` (tùy chọn): học sinh quản trị — CHỈ xem thống kê tổng hợp (tổng số ca, theo nhóm, tiến độ, 14 ngày gần đây, số ca cần thầy cô chú ý). Không đặt thì học sinh không đăng nhập được. Hai mật khẩu phải khác nhau.
+- Phân quyền được kiểm tra ở máy chủ: tài khoản học sinh không nhận mã, tiêu đề hay nội dung của ca nào, và bị từ chối (403) khi sửa/xóa. Test C-04, AD-02.
+
+## Phiên bản 29 — Xưng hô "bạn", góc nhìn học sinh
+- Toàn bộ giao diện, hướng dẫn, thông báo, lời nhắc cho AI, báo cáo xuất ra và trang tài liệu đổi cách xưng hô từ "em" sang "bạn" (giữ nguyên "trẻ em").
+- Góc nhìn: học sinh làm app để hỗ trợ thầy cô tư vấn các bạn trong trường. Trang quản trị ghi rõ dành cho nhóm học sinh hỗ trợ và thầy cô tư vấn; ca "Cần chú ý" phải báo ngay thầy cô tư vấn, không tự xử lý. Thêm mục "Về dự án" ở trang Hướng dẫn.
+
+## Phiên bản 28 — Chat giới hạn
+- Nút "Hỏi trợ lý" chỉ còn ở Bước 2, tối đa 8 lượt hỏi mỗi vấn đề (hết lượt thì khóa ô nhập, nhắc nói chuyện với thầy cô/người lớn). Bước 3-6 AI vẫn tự gợi ý nhưng không còn khung chat. Test CH-01.
+
+## Phiên bản 27 — An toàn cho trẻ em: không thu thập họ tên/lớp/trường
+- App không còn hỏi họ tên, lớp, trường. Chỉ có mã ẩn danh ngẫu nhiên (HS-xxxxx) lưu trên thiết bị. Hồ sơ cũ có họ tên bị xóa khỏi thiết bị khi mở bản mới.
+- Gửi cho thầy cô (tùy chọn, cần tick đồng ý): chỉ gửi nội dung vấn đề kèm mã ẩn danh. Trang quản trị chỉ hiện mã; máy chủ còn loại bỏ họ tên/lớp/trường nếu kho dữ liệu cũ còn lưu.
+- Gắn nhãn "do AI tạo ra": giọng chào (Piper), logo, mã nguồn, trợ lý Gemini (màn hình bắt đầu và Hướng dẫn sử dụng). Lời chào ghi âm lại cho khớp (không còn bảo nhập tên/lớp).
+- **Bắt buộc khi nâng cấp:** (1) dán lại `apps-script/Code.gs` mới và triển khai lại; (2) XÓA hoặc đổi tên trang tính `VanDe` cũ (cột đã đổi: bỏ Họ tên/Lớp/Trường, thêm Mã học sinh) và nên xóa dữ liệu cũ có họ tên.
 
 ## Phiên bản 26 — Bỏ khóa cứng một màn hình
 - Mọi thiết bị (điện thoại, máy tính) cuộn trang tự nhiên; ô nhập tự giãn theo nội dung nên hiện đủ các dòng; không còn khung cuộn nhỏ bên trong. Nút Quay lại/Tiếp luôn dính ở đáy màn hình. Test LY-02.

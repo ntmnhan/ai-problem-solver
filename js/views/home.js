@@ -17,8 +17,8 @@ export function render(root) {
     const items = store.listProblems();
     if (!items.length) {
       list.appendChild(h('div', { class: 'card empty' }, owl({ size: 96, mood: 'think' }),
-        h('h3', null, 'Em chưa có vấn đề nào'),
-        h('p', null, 'Bấm “Vấn đề mới” để bắt đầu. Mình sẽ đi cùng em qua từng bước.')));
+        h('h3', null, 'Bạn chưa có vấn đề nào'),
+        h('p', null, 'Bấm “Vấn đề mới” để bắt đầu. Mình sẽ đi cùng bạn qua từng bước.')));
       return;
     }
     items.forEach((p) => {
@@ -50,7 +50,7 @@ export function render(root) {
               onClick: async () => {
                 const ok = await confirmDialog({
                   title: 'Xóa vấn đề này?',
-                  text: `“${p.title}” sẽ bị xóa khỏi thiết bị và không thể khôi phục (trừ khi em có bản sao lưu).`,
+                  text: `“${p.title}” sẽ bị xóa khỏi thiết bị và không thể khôi phục (trừ khi bạn có bản sao lưu).`,
                   okLabel: 'Xóa', danger: true
                 });
                 if (ok) { store.deleteProblem(p.id); toast('Đã xóa vấn đề.', 'ok'); draw(); }
@@ -60,14 +60,14 @@ export function render(root) {
     });
   };
 
-  const greet = prof && prof.name ? `Chào ${prof.name}!` : 'Chào em!';
+  const greet = prof && prof.name ? `Chào ${prof.name}!` : 'Chào bạn!';
   root.appendChild(
     h('div', { class: 'home' },
       h('div', { class: 'home-hero' },
         owl({ size: 84, mood: 'wave' }),
         h('div', { class: 'home-hello' },
           h('h1', null, greet),
-          h('p', { class: 'muted' }, prof && prof.anonymous ? `Chế độ ẩn danh · mã của em: ${prof.code}` : (prof && prof.cls ? `Lớp ${prof.cls} · Hôm nay em muốn gỡ rối chuyện gì?` : 'Hôm nay em muốn gỡ rối chuyện gì?'))),
+          h('p', { class: 'muted' }, prof && prof.code ? `Mã của bạn: ${prof.code} · Hôm nay bạn muốn gỡ rối chuyện gì?` : 'Hôm nay bạn muốn gỡ rối chuyện gì?')),
         h('button', {
           type: 'button', class: 'btn btn-primary', id: 'new-problem',
           onClick: () => { const p = store.createProblem(); location.hash = `#/problem/${p.id}/1`; }

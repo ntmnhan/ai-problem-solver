@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { callScript, json } = require('../lib/script');
 const { STATUSES, clip } = require('../lib/share');
+const { summarize } = require('../lib/adminSummary');
 
 const fails = new Map();
 function locked(ip) {
@@ -22,13 +23,17 @@ function sameSecret(a, b) {
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'method_not_allowed' });
+  // Hai mức quyền: ADMIN_PASSWORD = thầy cô (xem nội dung, xử lý, xóa); STUDENT_PASSWORD = học sinh quản trị (chỉ xem thống kê tổng hợp)
   const pass = process.env.ADMIN_PASSWORD;
+  const spass = process.env.STUDENT_PASSWORD || '';
   if (!pass || !process.env.APPS_SCRIPT_URL) {
     return json(res, 503, { error: 'not_configured', message: 'Trang quản trị chưa được cấu hình (thiếu ADMIN_PASSWORD hoặc APPS_SCRIPT_URL trên Vercel).' });
   }
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'ip').split(',')[0].trim();
   if (locked(ip)) return json(res, 429, { error: 'locked', message: 'Nhập sai quá nhiều lần. Hãy thử lại sau 15 phút.' });
-  if (!sameSecret(req.headers['x-admin-password'] || '', pass)) {
+  const given = req.headers['x-admin-password'] || '';
+  const role = sameSecret(given, pass) ? 'teacher' : (spass && sameSecret(given, spass) ? 'student' : '');
+  if (!role) {
     noteFail(ip);
     return json(res, 401, { error: 'unauthorized', message: 'Mật khẩu chưa đúng.' });
   }
@@ -40,9 +45,12 @@ module.exports = async function handler(req, res) {
   try {
     let r;
     if (b.action === 'login') {
-      return json(res, 200, { ok: true });
+      return json(res, 200, { ok: true, role });
     } else if (b.action === 'list') {
       r = await callScript('POST', { action: 'adminList' });
+      if (r && r.ok && role === 'student') return json(res, 200, { ok: true, role, summary: summarize(r.items) }); // học sinh KHÔNG nhận nội dung các ca
+    } else if (role !== 'teacher') {
+      return json(res, 403, { error: 'forbidden', message: 'Chỉ thầy cô mới xem nội dung và xử lý các ca.' });
     } else if (b.action === 'update') {
       const id = clip(b.id, 40);
       if (!/^[\w-]{4,40}$/.test(id) || !STATUSES.includes(b.status)) return json(res, 400, { error: 'bad_request' });
@@ -54,7 +62,8 @@ module.exports = async function handler(req, res) {
     } else {
       return json(res, 400, { error: 'bad_request' });
     }
-    if (r && r.ok) return json(res, 200, r);
+    if (r && Array.isArray(r.items)) r.items = r.items.map((it) => { const o = Object.assign({}, it); delete o.name; delete o.cls; delete o.school; return o; }); // không bao giờ trả họ tên/lớp/trường
+    if (r && r.ok) return json(res, 200, Object.assign({ role }, r));
     return json(res, 502, { error: 'script_failed', message: 'Kho dữ liệu chưa trả lời đúng. Hãy kiểm tra Apps Script đã cập nhật mã mới và triển khai lại chưa.' });
   } catch (e) {
     return json(res, 502, { error: 'script_failed', message: 'Không kết nối được kho dữ liệu (Apps Script). Thử lại sau nhé.' });

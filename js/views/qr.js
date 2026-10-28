@@ -65,7 +65,7 @@ export function render(root) {
         h('div', { class: 'url-box' }, url),
         h('div', { class: 'row', style: 'justify-content:center' },
           btn('Tải QR (PNG)', { kind: 'primary', icon: 'download', onClick: () => canvas.toBlob((b) => b && downloadBlob(b, 'ai-problem-solver-qr.png'), 'image/png') }),
-          btn('Sao chép địa chỉ', { icon: 'copy', onClick: async () => toast((await copyText(url)) ? 'Đã sao chép địa chỉ.' : 'Không sao chép được, em chọn và sao chép thủ công nhé.', 'ok') })
+          btn('Sao chép địa chỉ', { icon: 'copy', onClick: async () => toast((await copyText(url)) ? 'Đã sao chép địa chỉ.' : 'Không sao chép được, bạn chọn và sao chép thủ công nhé.', 'ok') })
         )
       )
     );

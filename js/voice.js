@@ -82,7 +82,7 @@ export function isListening() {
 // ----- Cài đặt giọng đọc: tốc độ và giọng nam/nữ (lưu trên máy) -----
 const RATE_KEY = 'aips_tts_rate';
 const GENDER_KEY = 'aips_tts_gender'; // 'f' (nữ) | 'm' (nam) | '' (mặc định)
-const NAME_KEY = 'aips_tts_voice';    // tên giọng cụ thể (nếu em chọn)
+const NAME_KEY = 'aips_tts_voice';    // tên giọng cụ thể (nếu bạn chọn)
 export const RATES = [['0.8', 'Chậm'], ['1', 'Vừa'], ['1.25', 'Nhanh']];
 const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* bỏ qua */ } };

@@ -21,8 +21,7 @@ export function render(root, params) {
     return;
   }
   const profile = store.getProfile();
-  const canShowName = !!(profile && !profile.anonymous && profile.name);
-  let showName = canShowName;
+  const showName = false; // app không thu thập họ tên/lớp
   const host = h('div');
   const draw = () => {
     clear(host);
@@ -63,17 +62,13 @@ export function render(root, params) {
       h('div', { class: 'no-print' },
         h('div', { class: 'row between', style: 'margin-bottom:12px' },
           h('a', { class: 'btn btn-sm btn-ghost', href: `#/problem/${p.id}/${Math.min(6, Math.max(1, done + 1))}` }, icon('left', 16), h('span', null, 'Quay lại làm tiếp')),
-          h('a', { class: 'btn btn-sm btn-ghost', href: '#/home' }, icon('home', 16), h('span', null, 'Vấn đề của em'))),
-        done < 6 ? h('div', { class: 'banner info' }, icon('info', 20), h('div', null, `Em mới xác nhận hoàn thành ${done}/6 bước nên báo cáo chỉ có nội dung em đã nhập. Em có thể quay lại làm tiếp bất cứ lúc nào.`)) : null,
+          h('a', { class: 'btn btn-sm btn-ghost', href: '#/home' }, icon('home', 16), h('span', null, 'Vấn đề của bạn'))),
+        done < 6 ? h('div', { class: 'banner info' }, icon('info', 20), h('div', null, `Bạn mới xác nhận hoàn thành ${done}/6 bước nên báo cáo chỉ có nội dung bạn đã nhập. Bạn có thể quay lại làm tiếp bất cứ lúc nào.`)) : null,
         h('div', { class: 'card' },
           h('h2', null, 'Xuất báo cáo'),
           h('div', { class: 'row' }, pdfBtn, docxBtn),
           h('p', { class: 'muted small', style: 'margin:10px 0 0' }, 'Với PDF: trong hộp thoại in, chọn “Lưu dưới dạng PDF” (hoặc “Save as PDF”). Có thể đưa tệp cho thầy cô xem.'),
-          canShowName
-            ? h('label', { class: 'check' },
-              h('input', { type: 'checkbox', checked: true, onChange: (e) => { showName = e.target.checked; draw(); } }),
-              h('span', null, 'Ghi họ tên và lớp của em trong báo cáo'))
-            : null
+          null
         )
       ),
       host

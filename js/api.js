@@ -15,7 +15,7 @@ async function request(path, opts = {}, timeoutMs = 35000) {
       data = null;
     }
     if (!res.ok) {
-      const err = new Error(((data && data.message) || 'Có lỗi xảy ra. Em thử lại sau nhé.') + (data && data.status ? ` (mã ${data.status})` : ''));
+      const err = new Error(((data && data.message) || 'Có lỗi xảy ra. Bạn thử lại sau nhé.') + (data && data.status ? ` (mã ${data.status})` : ''));
       err.code = (data && data.error) || 'http_' + res.status;
       err.status = res.status;
       throw err;
@@ -23,12 +23,12 @@ async function request(path, opts = {}, timeoutMs = 35000) {
     return data;
   } catch (e) {
     if (e.name === 'AbortError') {
-      const err = new Error('Kết nối quá lâu. Em kiểm tra mạng rồi thử lại nhé.');
+      const err = new Error('Kết nối quá lâu. Bạn kiểm tra mạng rồi thử lại nhé.');
       err.code = 'timeout';
       throw err;
     }
     if (e instanceof TypeError) {
-      const err = new Error('Không có kết nối mạng. Em kiểm tra mạng rồi thử lại nhé.');
+      const err = new Error('Không có kết nối mạng. Bạn kiểm tra mạng rồi thử lại nhé.');
       err.code = 'network';
       throw err;
     }

@@ -143,17 +143,20 @@ function randomCode() {
 }
 
 export function getProfile() {
-  return get().profile;
+  const p = get().profile;
+  // Từ v27 app không thu thập họ tên/lớp: xóa thông tin cũ (nếu có) khỏi thiết bị
+  if (p && (p.name || p.cls || !p.anonymous)) { p.name = ''; p.cls = ''; p.anonymous = true; saveNow(); }
+  return p;
 }
 
-export function setProfile({ name = '', cls = '', anonymous = false }) {
+export function setProfile() {
   const s = get();
   const prev = s.profile;
   s.profile = {
     code: prev && prev.code ? prev.code : randomCode(),
-    name: anonymous ? '' : name.trim().slice(0, 60),
-    cls: anonymous ? '' : cls.trim().slice(0, 20),
-    anonymous: !!anonymous,
+    name: '',
+    cls: '',
+    anonymous: true,
     createdAt: prev ? prev.createdAt : Date.now()
   };
   saveNow();
@@ -223,7 +226,7 @@ export function canOpen(p, n) {
 export function markEdited(p, n) {
   const st = p.steps[n];
   if (st.status === 'not_started' || st.status === 'done') {
-    // Sửa bước đã hoàn thành: em cần xác nhận lại, không tự giữ trạng thái cũ.
+    // Sửa bước đã hoàn thành: bạn cần xác nhận lại, không tự giữ trạng thái cũ.
     st.status = 'in_progress';
     st.completedAt = null;
   }
@@ -328,9 +331,9 @@ export function importAll(obj) {
   if (!s.profile && obj.profile && typeof obj.profile === 'object') {
     s.profile = {
       code: String(obj.profile.code || randomCode()).slice(0, 12),
-      name: String(obj.profile.name || '').slice(0, 60),
-      cls: String(obj.profile.cls || '').slice(0, 20),
-      anonymous: !!obj.profile.anonymous,
+      name: '',
+      cls: '',
+      anonymous: true,
       createdAt: obj.profile.createdAt || Date.now()
     };
   }

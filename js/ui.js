@@ -240,11 +240,11 @@ export function safetyCard(level = 'concern') {
   return h(
     'div',
     { class: `safety-card ${level === 'danger' ? 'danger' : ''}`, role: 'note' },
-    h('div', { class: 'safety-head' }, icon('shield', 20), h('strong', null, 'Sự an toàn của em là quan trọng nhất')),
+    h('div', { class: 'safety-head' }, icon('shield', 20), h('strong', null, 'Sự an toàn của bạn là quan trọng nhất')),
     h(
       'p',
       null,
-      'Em hãy nói với ba mẹ, thầy cô hoặc một người lớn em tin tưởng. Em không cần kể chi tiết nếu em chưa sẵn sàng.'
+      'Bạn hãy nói với ba mẹ, thầy cô hoặc một người lớn bạn tin tưởng. Bạn không cần kể chi tiết nếu bạn chưa sẵn sàng.'
     ),
     h(
       'ul',

@@ -53,7 +53,7 @@ function buildContents(messages, task, payload) {
   while (contents.length && contents[0].role !== 'user') contents.shift();
   const instr = taskInstruction(task, payload);
   if (instr) push('user', '[Yêu cầu hệ thống cho trợ lý] ' + instr);
-  if (!contents.length) push('user', 'Em muốn bắt đầu.');
+  if (!contents.length) push('user', 'Bạn muốn bắt đầu.');
   if (contents[contents.length - 1].role !== 'user') {
     push('user', 'Mình xin tiếp tục nhé.');
   }
@@ -67,6 +67,25 @@ function coolOff(m, st) {
   cool.set(m, Date.now() + ms);
 }
 const isCool = (m) => (cool.get(m) || 0) > Date.now();
+
+// Hỏi Google danh sách model có generateContent; ưu tiên flash/flash-lite bản mới nhất.
+async function discoverModels(key) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5000);
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key=' + encodeURIComponent(key), { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) { console.error('Gemini ListModels lỗi', r.status); return []; }
+    const d = await r.json();
+    const ver = (n) => (n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1] * 1;
+    return (d.models || [])
+      .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map((m) => String(m.name || '').replace(/^models\//, ''))
+      .filter((n) => /^gemini-[\d.]+-flash(-lite)?(-preview.*)?$/.test(n) && !/image|tts|live|audio|thinking|embedding/.test(n))
+      .sort((a, b) => ver(b) - ver(a) || (/lite/.test(b) ? -1 : 1))
+      .slice(0, 5);
+  } catch (e) { return []; }
+}
 
 // Giảm "thời gian suy nghĩ" để trả lời nhanh và không hết token vì suy nghĩ.
 function thinkingFor(model) {
@@ -109,7 +128,7 @@ module.exports = async function handler(req, res) {
 
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'ip').split(',')[0].trim();
   if (rateLimited(ip)) {
-    return json(res, 429, { error: 'rate_limited', message: 'Em gửi hơi nhanh rồi. Chờ một chút rồi thử lại nhé.' });
+    return json(res, 429, { error: 'rate_limited', message: 'Bạn gửi hơi nhanh rồi. Chờ một chút rồi thử lại nhé.' });
   }
 
   let body = req.body;
@@ -143,7 +162,7 @@ module.exports = async function handler(req, res) {
     .join(',').split(',').map((k) => k.trim()).filter(Boolean)
     .filter((k, i, a) => a.indexOf(k) === i);
   const primary = process.env.GEMINI_MODEL;
-  const models = [primary, 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
+  const models = [primary, 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-flash-lite-latest', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-2.5-flash']
     .filter(Boolean).filter((m, i, a) => a.indexOf(m) === i);
   const RETRY = [404, 403, 429, 500, 502, 503, 504];
   const deadline = Date.now() + 26000;
@@ -168,8 +187,16 @@ module.exports = async function handler(req, res) {
   async function generate() {
     let last = { status: 0, model: '' };
     const live = models.filter((m) => !isCool(m));
-    const order = live.length ? live : models;
+    const order = (live.length ? live : models).slice();
+    let discovered = false;
     for (let pass = 0; pass < 2 && left() > 2500; pass++) {
+      // Mọi model đều 404 (Google đổi/ngừng tên): hỏi Google danh sách model key này dùng được.
+      if (pass === 1 && !discovered && last.status === 404 && keys[0]) {
+        discovered = true;
+        const found = await discoverModels(keys[0]);
+        for (const m of found) if (!order.includes(m) && !isCool(m)) order.push(m);
+        console.error('Gemini: tự dò model khả dụng:', found.join(', ') || '(không có)');
+      }
       for (const key of keys) {
         for (const m of order) {
           if (left() < 2500) break;
@@ -242,18 +269,18 @@ module.exports = async function handler(req, res) {
     if (g.fail) {
       const st = g.fail.status;
       if (st === 429) {
-        return json(res, 429, { error: 'quota', status: st, message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Em thử lại sau ít phút nhé.' });
+        return json(res, 429, { error: 'quota', status: st, message: 'Trợ lý đang quá tải hoặc hết lượt miễn phí. Bạn thử lại sau ít phút nhé.' });
       }
       if (st === 504) {
-        return json(res, 504, { error: 'timeout', status: st, message: 'Trợ lý trả lời quá lâu. Em thử lại nhé.' });
+        return json(res, 504, { error: 'timeout', status: st, message: 'Trợ lý trả lời quá lâu. Bạn thử lại nhé.' });
       }
-      return json(res, 502, { error: 'upstream', status: st, message: 'Trợ lý đang gặp sự cố. Em thử lại sau nhé.' });
+      return json(res, 502, { error: 'upstream', status: st, message: 'Trợ lý đang gặp sự cố. Bạn thử lại sau nhé.' });
     }
     if (g.blocked) {
       return json(res, 200, {
         task,
         risk: 'concern',
-        reply: 'Mình chưa thể trả lời nội dung này. Nếu em đang gặp điều gì khiến em lo lắng hay không an toàn, em hãy nói với ba mẹ, thầy cô hoặc người lớn em tin tưởng nhé.'
+        reply: 'Mình chưa thể trả lời nội dung này. Nếu bạn đang gặp điều gì khiến bạn lo lắng hay không an toàn, bạn hãy nói với ba mẹ, thầy cô hoặc người lớn bạn tin tưởng nhé.'
       });
     }
     const out = g.out;
@@ -265,7 +292,7 @@ module.exports = async function handler(req, res) {
     if (process.env.AIPS_DEBUG) out._model = g.model;
     return json(res, 200, out);
   } catch (e) {
-    return json(res, 502, { error: 'upstream', message: 'Không kết nối được với trợ lý. Em kiểm tra mạng rồi thử lại nhé.' });
+    return json(res, 502, { error: 'upstream', message: 'Không kết nối được với trợ lý. Bạn kiểm tra mạng rồi thử lại nhé.' });
   }
 };
 

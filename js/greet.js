@@ -1,8 +1,8 @@
 // Lời chào bằng giọng nói khi học sinh vừa vào app (chỉ ở màn hình bắt đầu, mỗi phiên một lần).
 // Dùng tệp âm thanh tiếng Việt thu sẵn (assets/greeting.mp3) nên không phụ thuộc giọng đọc của trình duyệt
-// (nhiều máy Windows/Chrome không có giọng tiếng Việt). Trình duyệt thường chặn tự phát khi em chưa chạm vào trang:
+// (nhiều máy Windows/Chrome không có giọng tiếng Việt). Trình duyệt thường chặn tự phát khi bạn chưa chạm vào trang:
 // nếu bị chặn thì phát ở lần chạm / bấm phím đầu tiên.
-export const GREETING_TEXT = 'Xin chào bạn đã đến với AI Problem Solver. Hãy nhập tên, lớp, hoặc tiếp tục với chế độ ẩn danh, rồi bấm Bắt đầu để chia sẻ câu chuyện của bạn với Cú nhé.';
+export const GREETING_TEXT = 'Xin chào bạn đã đến với AI Problem Solver. Bạn không cần nhập tên hay lớp. Hãy bấm Bắt đầu để chia sẻ câu chuyện của bạn với Cú nhé.';
 const SRC = 'assets/greeting.mp3';
 import * as voice from './voice.js';
 
@@ -31,7 +31,7 @@ export async function playGreeting() {
   }
 }
 
-// Không tự phát: lời chào chỉ vang lên khi em bấm nút "Nghe lời chào". Giữ hàm để tương thích.
+// Không tự phát: lời chào chỉ vang lên khi bạn bấm nút "Nghe lời chào". Giữ hàm để tương thích.
 export function autoGreet() {
   return () => { stopGreeting(); };
 }

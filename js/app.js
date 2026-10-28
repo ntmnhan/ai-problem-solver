@@ -66,10 +66,10 @@ function renderHeader() {
   const hasProfile = !!store.getProfile();
   clear(headerEl);
   const menu = h('div', { class: 'menu', role: 'menu', id: 'main-menu' },
-    menuItem('Vấn đề của em', 'home', null, { href: '#/home', cls: currentPath === 'home' ? 'active' : '' }),
+    menuItem('Vấn đề của bạn', 'home', null, { href: '#/home', cls: currentPath === 'home' ? 'active' : '' }),
     menuItem('Kho tài liệu', 'book', null, { href: '#/library', cls: currentPath === 'library' ? 'active' : '' }),
     menuItem('Mã QR chia sẻ', 'qr', null, { href: '#/qr', cls: currentPath === 'qr' ? 'active' : '' }),
-    hasProfile ? menuItem('Thông tin của em', 'user', () => openProfileModal(() => route())) : null,
+    hasProfile ? menuItem('Mã của bạn', 'user', () => openProfileModal(() => route())) : null,
     h('hr'),
     hasProfile ? menuItem('Tải bản sao lưu', 'download', downloadBackup) : null,
     menuItem('Khôi phục từ tệp', 'upload', () => pickRestoreFile(() => route())),
@@ -86,7 +86,7 @@ function renderHeader() {
       saveChip(),
       h('button', { type: 'button', class: 'icon-btn', id: 'theme-btn', 'aria-label': currentTheme() === 'dark' ? 'Chuyển sang nền sáng' : 'Chuyển sang nền tối', title: 'Sáng / tối', onClick: toggleTheme }, icon(currentTheme() === 'dark' ? 'sun' : 'moon', 20)),
       h('a', { class: `hdr-link ${currentPath === 'guide' ? 'active' : ''}`, id: 'guide-link', href: '#/guide', title: 'Hướng dẫn sử dụng', 'aria-label': 'Hướng dẫn sử dụng' }, icon('info', 20), h('span', null, 'Hướng dẫn')),
-      h('a', { class: `hdr-link ${currentPath === 'admin' ? 'active' : ''}`, id: 'admin-link', href: '#/admin', title: 'Dành cho thầy cô (Admin)', 'aria-label': 'Admin - dành cho thầy cô' }, icon('lock', 20), h('span', null, 'Admin')),
+      h('a', { class: `hdr-link ${currentPath === 'admin' ? 'active' : ''}`, id: 'admin-link', href: '#/admin', title: 'Quản trị (thầy cô và nhóm học sinh)', 'aria-label': 'Admin - quản trị' }, icon('lock', 20), h('span', null, 'Admin')),
       h('div', { class: 'menu-wrap' },
         h('button', {
           type: 'button', class: 'icon-btn', id: 'menu-btn', 'aria-label': 'Mở menu', 'aria-haspopup': 'menu', 'aria-expanded': menuOpen ? 'true' : 'false', 'aria-controls': 'main-menu',
@@ -111,7 +111,7 @@ document.addEventListener('keydown', (e) => {
 store.onStatus(() => {
   const chip = document.getElementById('save-chip');
   const s = store.getStatus();
-  if (s === 'failed') toast('Không lưu được vào thiết bị (bộ nhớ đầy hoặc bị chặn). Em hãy tải bản sao lưu.', 'error', 6000);
+  if (s === 'failed') toast('Không lưu được vào thiết bị (bộ nhớ đầy hoặc bị chặn). Bạn hãy tải bản sao lưu.', 'error', 6000);
   if (chip || s !== 'idle') renderHeader();
 });
 
@@ -164,13 +164,13 @@ function openFeedback() {
     }
   };
   draw();
-  const ta = h('textarea', { rows: 4, maxlength: 500, placeholder: 'Em thấy website thế nào? Em muốn thêm hoặc sửa điều gì?', 'aria-label': 'Góp ý của em' });
+  const ta = h('textarea', { rows: 4, maxlength: 500, placeholder: 'Bạn thấy website thế nào? Bạn muốn thêm hoặc sửa điều gì?', 'aria-label': 'Góp ý của bạn' });
   modal({
     title: 'Đánh giá và góp ý',
     body: h('div', null,
-      h('p', { class: 'muted small' }, 'Em không cần ghi tên. Em đừng ghi số điện thoại hay địa chỉ nhé.'),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Em chấm mấy sao?'), starsEl),
-      h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Ý kiến của em'), ta)),
+      h('p', { class: 'muted small' }, 'Bạn không cần ghi tên. Bạn đừng ghi số điện thoại hay địa chỉ nhé.'),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Bạn chấm mấy sao?'), starsEl),
+      h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Ý kiến của bạn'), ta)),
     actions: [
       { label: 'Hủy', kind: 'ghost' },
       {
@@ -178,17 +178,17 @@ function openFeedback() {
         kind: 'primary',
         onClick: async () => {
           const comment = ta.value.trim();
-          if (!rating && !comment) { toast('Em hãy chọn số sao hoặc viết ý kiến.', 'error'); return false; }
+          if (!rating && !comment) { toast('Bạn hãy chọn số sao hoặc viết ý kiến.', 'error'); return false; }
           const last = Number(sessionStorage.getItem('aips:lastfb') || 0);
-          if (Date.now() - last < 15000) { toast('Em vừa gửi xong, chờ một chút nhé.', 'error'); return false; }
+          if (Date.now() - last < 15000) { toast('Bạn vừa gửi xong, chờ một chút nhé.', 'error'); return false; }
           try {
             const r = await sendFeedback({ kind: rating ? 'rating' : 'idea', rating, comment });
             try { sessionStorage.setItem('aips:lastfb', String(Date.now())); } catch (e) { /* bỏ qua */ }
             if (r && typeof r.ratingCount === 'number') stats = Object.assign({}, stats, { ratingCount: r.ratingCount, ratingAvg: r.ratingAvg, visits: r.visits != null ? r.visits : stats.visits });
             renderFooter();
-            toast('Cảm ơn em đã gửi ý kiến!', 'ok');
+            toast('Cảm ơn bạn đã gửi ý kiến!', 'ok');
           } catch (e) {
-            toast(e.message || 'Chưa gửi được. Em thử lại sau nhé.', 'error', 5000);
+            toast(e.message || 'Chưa gửi được. Bạn thử lại sau nhé.', 'error', 5000);
             return false;
           }
         }
@@ -268,7 +268,7 @@ function route() {
   } catch (e) {
     console.error(e);
     clear(appEl);
-    appEl.appendChild(h('div', { class: 'banner error' }, icon('alert', 20), h('div', null, h('strong', null, 'Có lỗi khi hiển thị trang. '), 'Em tải lại trang giúp mình nhé. Dữ liệu của em vẫn an toàn trên thiết bị.')));
+    appEl.appendChild(h('div', { class: 'banner error' }, icon('alert', 20), h('div', null, h('strong', null, 'Có lỗi khi hiển thị trang. '), 'Bạn tải lại trang giúp mình nhé. Dữ liệu của bạn vẫn an toàn trên thiết bị.')));
   }
   if (typeof res === 'function') cleanup = res;
   renderHeader();

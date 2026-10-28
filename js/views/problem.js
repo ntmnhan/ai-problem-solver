@@ -1,5 +1,5 @@
-// Màn hình làm việc: mỗi bước một màn hình, không cuộn trang. Chú cú hỏi một câu, em trả lời, bấm Tiếp.
-// Trợ lý AI nằm trong khay "Hỏi trợ lý" (mở khi em cần), không chiếm chỗ của câu hỏi chính.
+// Màn hình làm việc: mỗi bước một màn hình, không cuộn trang. Chú cú hỏi một câu, bạn trả lời, bấm Tiếp.
+// Trợ lý AI nằm trong khay "Hỏi trợ lý" (mở khi bạn cần), không chiếm chỗ của câu hỏi chính.
 import { STEPS, CATEGORIES, STATUS_LABEL, TASK_STATUS } from '../config.js';
 import * as store from '../store.js';
 import * as voice from '../voice.js';
@@ -63,7 +63,7 @@ export function render(root, params) {
   root.appendChild(
     h('div', { class: 'wz' },
       h('div', { class: 'wz-top' },
-        h('a', { class: 'icon-btn', href: '#/home', 'aria-label': 'Vấn đề của em', title: 'Vấn đề của em' }, icon('left', 20)),
+        h('a', { class: 'icon-btn', href: '#/home', 'aria-label': 'Vấn đề của bạn', title: 'Vấn đề của bạn' }, icon('left', 20)),
         titleEl,
         h('button', {
           type: 'button', class: 'icon-btn', 'aria-label': 'Đổi tên vấn đề', title: 'Đổi tên vấn đề',
@@ -146,8 +146,8 @@ export function render(root, params) {
     clear(reviewEl);
     reviewEl.classList.toggle('hidden', !st.needsReview);
     if (!st.needsReview) return;
-    reviewEl.append(icon('alert', 18), h('span', null, 'Em vừa sửa bước trước, xem lại bước này còn đúng không nhé.'),
-      btn('Em đã xem lại', { small: true, onClick: () => { store.clearReview(id, n); refreshMeta(); } }));
+    reviewEl.append(icon('alert', 18), h('span', null, 'Bạn vừa sửa bước trước, xem lại bước này còn đúng không nhé.'),
+      btn('Bạn đã xem lại', { small: true, onClick: () => { store.clearReview(id, n); refreshMeta(); } }));
   }
 
   function refreshMeta() {
@@ -159,16 +159,16 @@ export function render(root, params) {
   // ---------- Kiểm tra điều kiện hoàn thành ----------
   function stepReady() {
     const d = P().data;
-    if (n === 1 && !d.problem.trim()) return 'Em hãy ghi vấn đề em đang gặp trước nhé.';
-    if (n === 2 && !d.cause.trim()) return 'Em hãy trả lời câu hỏi nguyên nhân trước nhé.';
-    if (n === 2 && !d.goal.trim()) return 'Em hãy ghi kết quả em mong muốn nhé.';
-    if (n === 3 && !d.solutions.some((s) => s.picked && s.text.trim())) return 'Em hãy chọn ít nhất một biện pháp (chạm vào biện pháp để chọn).';
+    if (n === 1 && !d.problem.trim()) return 'Bạn hãy ghi vấn đề bạn đang gặp trước nhé.';
+    if (n === 2 && !d.cause.trim()) return 'Bạn hãy trả lời câu hỏi nguyên nhân trước nhé.';
+    if (n === 2 && !d.goal.trim()) return 'Bạn hãy ghi kết quả bạn mong muốn nhé.';
+    if (n === 3 && !d.solutions.some((s) => s.picked && s.text.trim())) return 'Bạn hãy chọn ít nhất một biện pháp (chạm vào biện pháp để chọn).';
     if (n === 4) {
-      if (!d.solutions.some((s) => s.picked && s.id === d.chosenId)) return 'Em hãy tự chọn một biện pháp ở trang cuối.';
+      if (!d.solutions.some((s) => s.picked && s.id === d.chosenId)) return 'Bạn hãy tự chọn một biện pháp ở trang cuối.';
     }
-    if (n === 5 && !d.plan.some((t) => t.text.trim())) return 'Chưa có việc nào trong kế hoạch. Em bấm “Soạn lại” hoặc tự thêm một việc nhé.';
-    if (n === 6 && d.happy === 'no') return 'Em chưa hài lòng thì mình quay lại Bước 3 nhé.';
-    if (n === 6 && d.happy !== 'yes') return 'Em hãy cho mình biết em có hài lòng không nhé.';
+    if (n === 5 && !d.plan.some((t) => t.text.trim())) return 'Chưa có việc nào trong kế hoạch. Bạn bấm “Soạn lại” hoặc tự thêm một việc nhé.';
+    if (n === 6 && d.happy === 'no') return 'Bạn chưa hài lòng thì mình quay lại Bước 3 nhé.';
+    if (n === 6 && d.happy !== 'yes') return 'Bạn hãy cho mình biết bạn có hài lòng không nhé.';
     return null;
   }
 
@@ -176,14 +176,14 @@ export function render(root, params) {
     const problem = stepReady();
     if (problem) { toast(problem, 'error', 4500); return; }
     const ok = await confirmDialog({
-      title: `Xong Bước ${n} chưa em?`,
-      text: 'Em xác nhận nội dung bước này đã hoàn tất. Em vẫn có thể quay lại sửa sau.',
+      title: `Xong Bước ${n} chưa bạn?`,
+      text: 'Bạn xác nhận nội dung bước này đã hoàn tất. Bạn vẫn có thể quay lại sửa sau.',
       okLabel: 'Đã xong',
-      cancelLabel: 'Chưa, để em xem lại'
+      cancelLabel: 'Chưa, để bạn xem lại'
     });
     if (!ok) return;
     store.completeStep(id, n);
-    toast(`Em đã hoàn thành Bước ${n}.`, 'ok');
+    toast(`Bạn đã hoàn thành Bước ${n}.`, 'ok');
     location.hash = n < 6 ? `#/problem/${id}/${n + 1}` : `#/result/${id}`;
   }
 
@@ -203,7 +203,7 @@ export function render(root, params) {
         : h('span', { class: 'spacer' })
     );
     actionsEl.appendChild(
-      n === 1 ? h('span', { class: 'spacer' }) : h('button', { type: 'button', class: 'btn btn-ask', id: 'ask-ai', onClick: openChat }, owl({ size: 26 }), h('span', null, 'Hỏi trợ lý'))
+      n !== 2 ? h('span', { class: 'spacer' }) : h('button', { type: 'button', class: 'btn btn-ask', id: 'ask-ai', onClick: openChat }, owl({ size: 26 }), h('span', null, 'Hỏi trợ lý'))
     );
     let next;
     if (!isLast) next = h('button', { type: 'button', class: 'btn btn-primary', onClick: () => goPage(sub + 1) }, h('span', null, 'Tiếp'), icon('right', 18));
@@ -220,8 +220,8 @@ export function render(root, params) {
     riskEl.classList.toggle('hidden', !risky);
     if (!risky) { clear(riskEl); return; }
     if (!riskEl.firstChild) {
-      riskEl.append(icon('heart', 18), h('span', null, 'Em ơi, nếu em đang không an toàn, hãy nói với người lớn em tin tưởng hoặc gọi ', h('a', { href: 'tel:111' }, '111'), '.'),
-        btn('Xem thêm', { small: true, onClick: () => modal({ title: 'Em không đơn độc', body: safetyCard('danger'), actions: [{ label: 'Đã hiểu', kind: 'primary' }] }) }));
+      riskEl.append(icon('heart', 18), h('span', null, 'Bạn ơi, nếu bạn đang không an toàn, hãy nói với người lớn bạn tin tưởng hoặc gọi ', h('a', { href: 'tel:111' }, '111'), '.'),
+        btn('Xem thêm', { small: true, onClick: () => modal({ title: 'Bạn không đơn độc', body: safetyCard('danger'), actions: [{ label: 'Đã hiểu', kind: 'primary' }] }) }));
     }
   }
 
@@ -278,10 +278,10 @@ export function render(root, params) {
     drawChips();
     return [{
       q: S.title,
-      hint: 'Kể ngắn gọn thôi. Em đừng ghi tên thật của người khác nhé.',
+      hint: 'Kể ngắn gọn thôi. Bạn đừng ghi tên thật của người khác nhé.',
       mood: 'happy',
       render: () => h('div', { class: 'col grow' }, chips,
-        textField({ label: 'Vấn đề em đang gặp phải là…', key: 'problem', placeholder: 'Em viết vào đây, hoặc bấm micro để nói…' }))
+        textField({ label: 'Vấn đề bạn đang gặp phải là…', key: 'problem', placeholder: 'Bạn viết vào đây, hoặc bấm micro để nói…' }))
     }];
   }
 
@@ -297,22 +297,22 @@ export function render(root, params) {
 
   function pagesStep2() {
     return [
-      { q: 'Theo em, nguyên nhân của vấn đề này là gì?', hint: 'Em nghĩ vì sao chuyện này xảy ra? Đoán cũng được.', mood: 'think', render: () => textField({ label: 'Nguyên nhân em nghĩ là…', key: 'cause', placeholder: 'Em nghĩ là vì…' }) },
-      { q: 'Kết quả em mong muốn đạt được là gì?', hint: 'Ví dụ: làm hòa với bạn, điểm môn Toán tốt hơn.', mood: 'happy', render: () => textField({ label: 'Kết quả em mong muốn là…', key: 'goal', placeholder: 'Em muốn…' }) }
+      { q: 'Theo bạn, nguyên nhân của vấn đề này là gì?', hint: 'Bạn nghĩ vì sao chuyện này xảy ra? Đoán cũng được.', mood: 'think', render: () => textField({ label: 'Nguyên nhân bạn nghĩ là…', key: 'cause', placeholder: 'Bạn nghĩ là vì…' }) },
+      { q: 'Kết quả bạn mong muốn đạt được là gì?', hint: 'Ví dụ: làm hòa với bạn, điểm môn Toán tốt hơn.', mood: 'happy', render: () => textField({ label: 'Kết quả bạn mong muốn là…', key: 'goal', placeholder: 'Bạn muốn…' }) }
     ];
   }
 
-  // ----- Bước 3: AI đề xuất khoảng 3 biện pháp, em chọn (hoặc tự thêm) -----
+  // ----- Bước 3: AI đề xuất khoảng 3 biện pháp, bạn chọn (hoặc tự thêm) -----
   function pageStep3() {
-    if (busy.suggest && !P().data.solutions.length) return loadingPage('Mình đang nghĩ vài biện pháp cho em…');
+    if (busy.suggest && !P().data.solutions.length) return loadingPage('Mình đang nghĩ vài biện pháp cho bạn…');
     if (fail.suggest && !P().data.solutions.length) return errorPage('Chưa nghĩ ra được biện pháp', () => fetchSuggest());
     return [{
-      q: 'Em chọn biện pháp nào?', hint: 'Em có thể chọn NHIỀU cách cùng lúc: chạm vào từng cách em thấy hợp. Em cũng có thể tự thêm cách của em.', mood: 'happy',
-      speak: () => 'Em chọn biện pháp nào? Mình gợi ý các cách sau. ' + P().data.solutions.map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em có thể chọn nhiều cách cùng lúc, chạm vào những cách em thấy hợp nhé.',
+      q: 'Bạn chọn biện pháp nào?', hint: 'Bạn có thể chọn NHIỀU cách cùng lúc: chạm vào từng cách bạn thấy hợp. Bạn cũng có thể tự thêm cách của bạn.', mood: 'happy',
+      speak: () => 'Bạn chọn biện pháp nào? Mình gợi ý các cách sau. ' + P().data.solutions.map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Bạn có thể chọn nhiều cách cùng lúc, chạm vào những cách bạn thấy hợp nhé.',
       render: () => {
         const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Các biện pháp' });
         const hint = h('p', { class: 'wz-hint' });
-        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Em có cách nào khác?', 'aria-label': 'Thêm biện pháp của em' });
+        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Bạn có cách nào khác?', 'aria-label': 'Thêm biện pháp của bạn' });
         const addVi = voiceInput({ ta: addInput });
         const moreBtn = btn('Gợi ý cách khác', { small: true, icon: 'bulb', onClick: () => fetchSuggest() });
         moreBtn.id = 'more-sug';
@@ -355,19 +355,19 @@ export function render(root, params) {
     }];
   }
 
-  // ----- Bước 4: ưu điểm, hạn chế của từng biện pháp em đã chọn; rồi em quyết định -----
+  // ----- Bước 4: ưu điểm, hạn chế của từng biện pháp bạn đã chọn; rồi bạn quyết định -----
   function pagesStep4() {
     const sols = pickedSols();
     if (!sols.length) {
       return [{
-        q: 'Em chưa chọn biện pháp nào', hint: '', mood: 'think',
-        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Em hãy quay lại Bước 3 để chọn ít nhất một biện pháp nhé.'),
+        q: 'Bạn chưa chọn biện pháp nào', hint: '', mood: 'think',
+        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Bạn hãy quay lại Bước 3 để chọn ít nhất một biện pháp nhé.'),
           h('a', { class: 'btn btn-primary', href: `#/problem/${id}/3` }, 'Về Bước 3'))
       }];
     }
     if (busy.analyze) return loadingPage('Mình đang phân tích từng biện pháp…');
     const pages = sols.map((s, i) => ({
-      q: `Cách ${i + 1}: ${s.text}`, hint: 'Đây là gợi ý của mình, em có thể sửa lại cho đúng ý em.', mood: 'think', qclass: 'long',
+      q: `Cách ${i + 1}: ${s.text}`, hint: 'Đây là gợi ý của mình, bạn có thể sửa lại cho đúng ý bạn.', mood: 'think', qclass: 'long',
       speak: () => {
         const a = P().data.analysis[s.id] || {};
         return `Cách ${i + 1}: ${s.text}. ` + (a.pros ? `Ưu điểm: ${clean(a.pros)} ` : '') + (a.cons ? `Hạn chế: ${clean(a.cons)}` : '');
@@ -378,8 +378,8 @@ export function render(root, params) {
         P().data.aiAnalysis[s.id] ? null : h('div', { class: 'row-end' }, h('span', { class: 'wz-hint' }, 'Chưa có gợi ý từ AI.'), btn('Nhờ AI phân tích', { small: true, icon: 'bulb', onClick: () => fetchAnalysis(true) })))
     }));
     pages.push({
-      q: 'Em quyết định chọn cách nào?', hint: 'Em là người quyết định, AI không chọn thay em. Phần lý do bên dưới không bắt buộc.', mood: 'cheer',
-      speak: () => 'Em quyết định chọn cách nào? ' + pickedSols().map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Em là người quyết định, mình không chọn thay em.',
+      q: 'Bạn quyết định chọn cách nào?', hint: 'Bạn là người quyết định, AI không chọn thay bạn. Phần lý do bên dưới không bắt buộc.', mood: 'cheer',
+      speak: () => 'Bạn quyết định chọn cách nào? ' + pickedSols().map((x, i) => `Cách ${i + 1}: ${x.text}.`).join(' ') + ' Bạn là người quyết định, mình không chọn thay bạn.',
       render: () => {
         const listEl = h('div', { class: 'pick-list grow', role: 'group', 'aria-label': 'Chọn một biện pháp' });
         const draw = () => {
@@ -388,14 +388,14 @@ export function render(root, params) {
           pickedSols().forEach((s, i) => {
             const on = d.chosenId === s.id;
             listEl.appendChild(h('button', {
-              type: 'button', class: `pick ${on ? 'on' : ''}`, 'aria-pressed': on ? 'true' : 'false', 'aria-label': on ? `Em đã chọn: ${s.text}` : `Em chọn biện pháp: ${s.text}`,
+              type: 'button', class: `pick ${on ? 'on' : ''}`, 'aria-pressed': on ? 'true' : 'false', 'aria-label': on ? `Bạn đã chọn: ${s.text}` : `Bạn chọn biện pháp: ${s.text}`,
               onClick: () => { update((dd) => { dd.chosenId = dd.chosenId === s.id ? null : s.id; }); draw(); }
             }, h('span', { class: 'num' }, on ? icon('check', 16) : String(i + 1)), h('span', { class: 'pt' }, s.text)));
           });
         };
         draw();
         return h('div', { class: 'col grow' }, listEl,
-          textField({ label: 'Vì sao cách em chọn phù hợp với em? (không bắt buộc, em có thể bỏ qua)', key: 'reason', placeholder: 'Em chọn cách này vì… (có thể để trống)', small: true, grow: false }));
+          textField({ label: 'Vì sao cách bạn chọn phù hợp với bạn? (không bắt buộc, bạn có thể bỏ qua)', key: 'reason', placeholder: 'Bạn chọn cách này vì… (có thể để trống)', small: true, grow: false }));
       }
     });
     return pages;
@@ -408,22 +408,22 @@ export function render(root, params) {
     const chosen = d0.solutions.find((s) => s.id === d0.chosenId);
     if (!chosen) {
       return [{
-        q: 'Em chưa chọn cách giải quyết', hint: '', mood: 'think',
-        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Em hãy quay lại Bước 4 để chọn một cách nhé.'),
+        q: 'Bạn chưa chọn cách giải quyết', hint: '', mood: 'think',
+        render: () => h('div', { class: 'wz-empty-card' }, icon('bulb', 28), h('p', null, 'Bạn hãy quay lại Bước 4 để chọn một cách nhé.'),
           h('a', { class: 'btn btn-primary', href: `#/problem/${id}/4` }, 'Về Bước 4'))
       }];
     }
     if (busy.plan) return loadingPage('Mình đang soạn các việc cần làm…');
     const overview = {
       q: 'Các việc cần làm theo thứ tự', hint: 'Bấm Tiếp để xem hướng dẫn chi tiết từng việc.', mood: 'cheer',
-      speak: () => `Cách em chọn: ${chosen.text}. Các việc cần làm theo thứ tự. ` + P().data.plan.map((t, i) => `Việc ${i + 1}: ${t.text}${t.time ? ', khoảng ' + t.time : ''}.`).join(' '),
+      speak: () => `Cách bạn chọn: ${chosen.text}. Các việc cần làm theo thứ tự. ` + P().data.plan.map((t, i) => `Việc ${i + 1}: ${t.text}${t.time ? ', khoảng ' + t.time : ''}.`).join(' '),
       render: () => {
         const listEl = h('ol', { class: 'plan-ov' });
-        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Thêm việc của em (không bắt buộc)', 'aria-label': 'Thêm việc' });
+        const addInput = h('input', { type: 'text', class: 'input', maxlength: 200, placeholder: 'Thêm việc của bạn (không bắt buộc)', 'aria-label': 'Thêm việc' });
         const draw = () => {
           clear(listEl);
           P().data.plan.forEach((t) => listEl.appendChild(h('li', { class: t.status === 'done' ? 'done' : '' }, h('span', { class: 'pt' }, t.text), t.time ? h('span', { class: 'tag-time' }, t.time) : null)));
-          if (!P().data.plan.length) listEl.appendChild(h('li', { class: 'muted' }, 'Chưa có việc nào. Em bấm “Soạn lại” hoặc tự thêm nhé.'));
+          if (!P().data.plan.length) listEl.appendChild(h('li', { class: 'muted' }, 'Chưa có việc nào. Bạn bấm “Soạn lại” hoặc tự thêm nhé.'));
         };
         const addNow = () => {
           const t = addInput.value.trim();
@@ -434,7 +434,7 @@ export function render(root, params) {
         addInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addNow(); } });
         draw();
         return h('div', { class: 'col grow' },
-          h('div', { class: 'chosen-note' }, icon('check', 16), h('span', null, h('b', null, 'Cách em chọn: '), chosen.text)),
+          h('div', { class: 'chosen-note' }, icon('check', 16), h('span', null, h('b', null, 'Cách bạn chọn: '), chosen.text)),
           listEl,
           h('div', { class: 'add-row' }, addInput, btn('Thêm', { icon: 'plus', onClick: addNow })),
           h('div', { class: 'row-end' }, btn('Soạn lại', { small: true, icon: 'refresh', onClick: () => fetchPlan(true) })));
@@ -443,7 +443,7 @@ export function render(root, params) {
     const pages = [overview];
     P().data.plan.forEach((t, i) => pages.push({
       q: `Việc ${i + 1}: ${t.text}`, hint: t.time ? `Thời gian dự kiến: ${t.time}` : '', mood: 'happy', qclass: 'long',
-      speak: () => `Việc ${i + 1}: ${t.text}. ` + (t.detail ? `Cách làm: ${clean(t.detail)} ` : '') + (t.expect ? `Làm xong, em sẽ: ${clean(t.expect)} ` : '') + (t.backup ? `Nếu chưa được: ${clean(t.backup)} ` : '') + (t.resource ? `Cần: ${t.resource}.` : '') + (t.time ? ` Thời gian dự kiến: ${t.time}.` : ''),
+      speak: () => `Việc ${i + 1}: ${t.text}. ` + (t.detail ? `Cách làm: ${clean(t.detail)} ` : '') + (t.expect ? `Làm xong, bạn sẽ: ${clean(t.expect)} ` : '') + (t.backup ? `Nếu chưa được: ${clean(t.backup)} ` : '') + (t.resource ? `Cần: ${t.resource}.` : '') + (t.time ? ` Thời gian dự kiến: ${t.time}.` : ''),
       render: () => {
         const stat = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Tình trạng việc này' });
         const drawStat = () => {
@@ -458,27 +458,27 @@ export function render(root, params) {
         const body = t.detail
           ? h('div', { class: 'how' }, h('b', null, 'Cách làm'), h('p', null, t.detail))
           : (() => {
-            const ta = h('textarea', { placeholder: 'Em sẽ làm như sau…', 'aria-label': 'Cách em sẽ làm việc này', maxlength: 600 });
+            const ta = h('textarea', { placeholder: 'Bạn sẽ làm như sau…', 'aria-label': 'Cách bạn sẽ làm việc này', maxlength: 600 });
             autoGrow(ta, 1500);
             ta.addEventListener('input', () => { update((dd) => { const x = dd.plan.find((y) => y.id === t.id); if (x) x.detail = ta.value; }); checkRisk(); });
             const vi = voiceInput({ ta });
-            return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, 'Cách em sẽ làm việc này'), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
+            return h('div', { class: 'fld grow small' }, h('span', { class: 'fld-cap' }, 'Cách bạn sẽ làm việc này'), h('div', { class: 'fld-box' }, ta, vi.btn), vi.strip);
           })();
         return h('div', { class: 'col grow' }, body,
-          t.expect ? h('div', { class: 'chosen-note' }, icon('target', 16), h('span', null, h('b', null, 'Làm xong, em sẽ: '), t.expect)) : null,
+          t.expect ? h('div', { class: 'chosen-note' }, icon('target', 16), h('span', null, h('b', null, 'Làm xong, bạn sẽ: '), t.expect)) : null,
           t.backup ? h('div', { class: 'chosen-note warn' }, icon('refresh', 16), h('span', null, h('b', null, 'Nếu chưa được: '), t.backup)) : null,
           t.resource ? h('div', { class: 'chosen-note' }, icon('users', 16), h('span', null, h('b', null, 'Cần: '), t.resource)) : null,
-          h('div', { class: 'fld-cap' }, 'Em đã làm việc này chưa? (em tự cập nhật)'), stat);
+          h('div', { class: 'fld-cap' }, 'Bạn đã làm việc này chưa? (bạn tự cập nhật)'), stat);
       }
     }));
     return pages;
   }
 
-  // ----- Bước 6: em đánh giá cách giải quyết; chưa hài lòng thì quay lại Bước 3 -----
+  // ----- Bước 6: bạn đánh giá cách giải quyết; chưa hài lòng thì quay lại Bước 3 -----
   async function redoFromStep3() {
     const ok = await confirmDialog({
       title: 'Quay lại Bước 3?',
-      text: 'Mình giữ lại các biện pháp cũ để em chọn lại hoặc thêm cách mới. Kế hoạch và đánh giá hiện tại sẽ được làm mới.',
+      text: 'Mình giữ lại các biện pháp cũ để bạn chọn lại hoặc thêm cách mới. Kế hoạch và đánh giá hiện tại sẽ được làm mới.',
       okLabel: 'Quay lại Bước 3', cancelLabel: 'Ở lại'
     });
     if (!ok) return;
@@ -495,10 +495,10 @@ export function render(root, params) {
     const ACH = [['yes', 'Đã đạt'], ['part', 'Đạt một phần'], ['no', 'Chưa đạt']];
     return [
       {
-        q: 'Nhìn lại kế hoạch của em', hint: d0.goal ? `Kết quả em mong muốn: ${d0.goal}` : 'Em đã làm được những việc nào rồi?', mood: 'think', qclass: 'long',
+        q: 'Nhìn lại kế hoạch của bạn', hint: d0.goal ? `Kết quả bạn mong muốn: ${d0.goal}` : 'Bạn đã làm được những việc nào rồi?', mood: 'think', qclass: 'long',
         render: () => {
           const listEl = h('div', { class: 'rv-list' });
-          const achEl = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Em đạt được kết quả mong muốn chưa?' });
+          const achEl = h('div', { class: 'seg tstat', role: 'group', 'aria-label': 'Bạn đạt được kết quả mong muốn chưa?' });
           const draw = () => {
             clear(listEl); clear(achEl);
             P().data.plan.filter((t) => t.text.trim()).forEach((t, i) => {
@@ -513,22 +513,22 @@ export function render(root, params) {
             ACH.forEach(([k, v]) => achEl.appendChild(h('button', { type: 'button', class: cur === k ? 'on' : '', 'aria-pressed': cur === k ? 'true' : 'false', onClick: () => { update((dd) => { dd.achieved = dd.achieved === k ? '' : k; }); draw(); } }, v)));
           };
           draw();
-          return h('div', { class: 'col grow' }, listEl, h('p', { class: 'wz-hint' }, 'Chạm vào tình trạng để đổi.'), h('div', { class: 'fld-cap' }, 'Em đạt được kết quả mong muốn chưa? (không bắt buộc)'), achEl);
+          return h('div', { class: 'col grow' }, listEl, h('p', { class: 'wz-hint' }, 'Chạm vào tình trạng để đổi.'), h('div', { class: 'fld-cap' }, 'Bạn đạt được kết quả mong muốn chưa? (không bắt buộc)'), achEl);
         }
       },
       {
-        q: 'Em có hài lòng với cách giải quyết này không?', hint: chosen ? `Cách em chọn: ${chosen.text}` : '', mood: 'think', qclass: 'long',
+        q: 'Bạn có hài lòng với cách giải quyết này không?', hint: chosen ? `Cách bạn chọn: ${chosen.text}` : '', mood: 'think', qclass: 'long',
         render: () => {
           const box = h('div', { class: 'col grow happy-box' });
           const draw = () => {
             clear(box);
             const cur = P().data.happy;
             box.append(
-              h('div', { class: 'happy-row', role: 'group', 'aria-label': 'Em có hài lòng không?' },
-                h('button', { type: 'button', id: 'happy-yes', class: `happy yes ${cur === 'yes' ? 'on' : ''}`, 'aria-pressed': cur === 'yes' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'yes'; }); draw(); refreshMeta(); } }, icon('heart', 26), h('span', null, 'Em hài lòng')),
-                h('button', { type: 'button', id: 'happy-no', class: `happy no ${cur === 'no' ? 'on' : ''}`, 'aria-pressed': cur === 'no' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'no'; }); draw(); refreshMeta(); } }, icon('refresh', 26), h('span', null, 'Em chưa hài lòng'))),
+              h('div', { class: 'happy-row', role: 'group', 'aria-label': 'Bạn có hài lòng không?' },
+                h('button', { type: 'button', id: 'happy-yes', class: `happy yes ${cur === 'yes' ? 'on' : ''}`, 'aria-pressed': cur === 'yes' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'yes'; }); draw(); refreshMeta(); } }, icon('heart', 26), h('span', null, 'Bạn hài lòng')),
+                h('button', { type: 'button', id: 'happy-no', class: `happy no ${cur === 'no' ? 'on' : ''}`, 'aria-pressed': cur === 'no' ? 'true' : 'false', onClick: () => { update((d) => { d.happy = 'no'; }); draw(); refreshMeta(); } }, icon('refresh', 26), h('span', null, 'Bạn chưa hài lòng'))),
               cur === 'no'
-                ? h('div', { class: 'redo-note' }, h('p', null, 'Không sao đâu em! Mình quay lại Bước 3 để chọn cách khác nhé.'), btn('Quay lại Bước 3', { kind: 'primary', icon: 'left', onClick: redoFromStep3 }))
+                ? h('div', { class: 'redo-note' }, h('p', null, 'Không sao đâu bạn! Mình quay lại Bước 3 để chọn cách khác nhé.'), btn('Quay lại Bước 3', { kind: 'primary', icon: 'left', onClick: redoFromStep3 }))
                 : h('span'));
           };
           draw();
@@ -536,13 +536,13 @@ export function render(root, params) {
         }
       },
       {
-        q: 'Cái gì đã tốt? Cái gì cần tốt hơn?', hint: 'Không bắt buộc, nhưng giúp em rút kinh nghiệm cho lần sau.', mood: 'cheer',
+        q: 'Cái gì đã tốt? Cái gì cần tốt hơn?', hint: 'Không bắt buộc, nhưng giúp bạn rút kinh nghiệm cho lần sau.', mood: 'cheer',
         render: () => h('div', { class: 'col grow' },
-          textField({ label: 'Điều đã làm tốt', key: 'good', placeholder: 'Em thấy mình đã làm tốt…', small: true }),
-          textField({ label: 'Điều cần làm tốt hơn', key: 'better', placeholder: 'Lần sau em sẽ cố gắng…', small: true }))
+          textField({ label: 'Điều đã làm tốt', key: 'good', placeholder: 'Bạn thấy mình đã làm tốt…', small: true }),
+          textField({ label: 'Điều cần làm tốt hơn', key: 'better', placeholder: 'Lần sau bạn sẽ cố gắng…', small: true }))
       },
       {
-        q: 'Em cho mấy điểm cho cách giải quyết này?', hint: '1 = chưa tốt, 5 = rất tốt. Không bắt buộc.', mood: 'happy',
+        q: 'Bạn cho mấy điểm cho cách giải quyết này?', hint: '1 = chưa tốt, 5 = rất tốt. Không bắt buộc.', mood: 'happy',
         render: () => {
           const satEl = h('div', { class: 'feas' });
           const drawSat = () => {
@@ -553,17 +553,14 @@ export function render(root, params) {
           return h('div', { class: 'col grow' }, satEl);
         }
       },
-      { q: 'Em có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi em tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
+      { q: 'Bạn có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi bạn tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
     ];
   }
 
-  // ---------- Trang cuối: gửi cho thầy cô (tùy chọn, cần em tick đồng ý) ----------
+  // ---------- Trang cuối: gửi cho thầy cô (tùy chọn, cần bạn tick đồng ý) ----------
   function shareCard() {
     const prof = store.getProfile() || {};
     const last = P().shared || {};
-    const nameI = h('input', { type: 'text', class: 'input', maxlength: 60, placeholder: 'Họ và tên (có thể bỏ trống)', 'aria-label': 'Họ và tên', id: 'sh-name', autocomplete: 'off', value: last.name != null ? last.name : (prof.anonymous ? '' : prof.name || '') });
-    const clsI = h('input', { type: 'text', class: 'input', maxlength: 20, placeholder: 'Lớp', 'aria-label': 'Lớp', id: 'sh-cls', autocomplete: 'off', value: last.cls != null ? last.cls : (prof.anonymous ? '' : prof.cls || '') });
-    const schI = h('input', { type: 'text', class: 'input', maxlength: 80, placeholder: 'Trường', 'aria-label': 'Trường', id: 'sh-school', autocomplete: 'off', value: last.school || '' });
     const chk = h('input', { type: 'checkbox', id: 'sh-ok', checked: false });
     const status = h('div', { class: 'share-status', role: 'status' });
     const sendB = btn(last.at ? 'Gửi lại bản cập nhật' : 'Gửi cho thầy cô', { kind: 'primary', icon: 'send', onClick: send });
@@ -573,7 +570,7 @@ export function render(root, params) {
     const paint = () => {
       clear(status);
       if (P().shared && P().shared.at) {
-        status.append(icon('check', 16), h('span', null, 'Đã gửi cho thầy cô lúc ' + new Date(P().shared.at).toLocaleString('vi-VN') + '. Cảm ơn em đã tin tưởng!'));
+        status.append(icon('check', 16), h('span', null, 'Đã gửi cho thầy cô lúc ' + new Date(P().shared.at).toLocaleString('vi-VN') + '. Cảm ơn bạn đã tin tưởng!'));
       }
     };
     async function send() {
@@ -584,7 +581,7 @@ export function render(root, params) {
       try {
         const r = await shareProblem({
           consent: true, id,
-          name: nameI.value, cls: clsI.value, school: schI.value,
+          code: prof.code || '',
           category: d.category, title: P().title,
           problem: d.problem, cause: d.cause, goal: d.goal,
           chosen: ch ? ch.text : '', reason: d.reason,
@@ -592,26 +589,26 @@ export function render(root, params) {
           happy: d.happy, final: d.final,
           satisfaction: d.satisfaction, stepsDone: store.stepsDone(P())
         });
-        store.markShared(id, { at: (r && r.at) || Date.now(), name: nameI.value.trim(), cls: clsI.value.trim(), school: schI.value.trim() });
+        store.markShared(id, { at: (r && r.at) || Date.now() });
         toast('Đã gửi cho thầy cô.', 'ok');
         paint();
         const lbl = sendB.querySelector('span'); if (lbl) lbl.textContent = 'Gửi lại bản cập nhật';
       } catch (e) {
-        toast(e.message || 'Chưa gửi được. Em thử lại nhé.', 'error', 5000);
+        toast(e.message || 'Chưa gửi được. Bạn thử lại nhé.', 'error', 5000);
       } finally {
         sendB.disabled = !chk.checked;
       }
     }
     paint();
     return h('div', { class: 'col grow share-card' },
-      h('div', { class: 'share-fields' }, nameI, h('div', { class: 'share-row' }, clsI, schI)),
+      h('p', { class: 'muted small share-note' }, `Chỉ thầy cô tư vấn của trường xem được nội dung bạn gửi, kèm mã ẩn danh (${prof.code || ''}); không có họ tên, lớp hay trường. Nhóm học sinh quản trị chỉ thấy thống kê chung.`),
       h('label', { class: 'check share-ok' }, chk,
-        h('span', null, 'Em đồng ý gửi vấn đề này (không gồm trò chuyện với AI) cho thầy cô để được hỗ trợ.')),
+        h('span', null, 'Bạn đồng ý gửi vấn đề này (không gồm trò chuyện với AI) cho thầy cô để được hỗ trợ.')),
       sendB, status,
-      h('p', { class: 'muted small share-note' }, 'Em có thể bỏ trống họ tên để ẩn danh. Nếu không muốn gửi, em bấm “Xong bước này” là được.'));
+      h('p', { class: 'muted small share-note' }, 'Bạn kiểm tra nội dung, đừng để lộ họ tên, số điện thoại, địa chỉ của bạn hay người khác. Nếu không muốn gửi, bạn bấm “Xong bước này” là được.'));
   }
 
-  // ---------- AI tự chạy ở các bước 3, 4, 5 (không cần em bấm) ----------
+  // ---------- AI tự chạy ở các bước 3, 4, 5 (không cần bạn bấm) ----------
   const busy = { suggest: false, analyze: false, plan: false };
   const fail = { suggest: false, analyze: false, plan: false };
   let alive = true;
@@ -683,7 +680,7 @@ export function render(root, params) {
     const chosen = d.solutions.find((s) => s.id === d.chosenId);
     if (busy.plan || !chosen) return;
     if (force && d.plan.some((t) => t.status !== 'todo')) {
-      const ok = await confirmDialog({ title: 'Soạn lại kế hoạch?', text: 'Các việc em đã đánh dấu sẽ bị thay bằng kế hoạch mới.', okLabel: 'Soạn lại', cancelLabel: 'Giữ nguyên' });
+      const ok = await confirmDialog({ title: 'Soạn lại kế hoạch?', text: 'Các việc bạn đã đánh dấu sẽ bị thay bằng kế hoạch mới.', okLabel: 'Soạn lại', cancelLabel: 'Giữ nguyên' });
       if (!ok) return;
     }
     busy.plan = true; fail.plan = false;
@@ -699,6 +696,10 @@ export function render(root, params) {
   }
 
   // ---------- Khay trò chuyện với trợ lý ----------
+  // Chỉ có ở Bước 2 và tối đa 8 lượt hỏi cho mỗi vấn đề (các bước 3-6 AI đã tự gợi ý, bạn tự quyết định)
+  const CHAT_LIMIT = 8;
+  const chatUsed = () => P().steps[n].messages.filter((m) => m.role === 'user').length;
+
   const chat = buildChat();
   function openChat() {
     modal({
@@ -710,11 +711,18 @@ export function render(root, params) {
 
   function buildChat() {
     const log = h('div', { class: 'chat-log', role: 'log', 'aria-label': 'Cuộc trò chuyện với trợ lý', tabindex: '0' });
-    const ta = h('textarea', { rows: 1, placeholder: 'Em muốn nói gì với mình?', 'aria-label': 'Tin nhắn của em', maxlength: 1500 });
+    const ta = h('textarea', { rows: 1, placeholder: 'Bạn muốn nói gì với mình?', 'aria-label': 'Tin nhắn của bạn', maxlength: 1500 });
     const fit = autoGrow(ta, 120);
     const sendBtn = h('button', { type: 'button', class: 'icon-btn send', 'aria-label': 'Gửi tin nhắn' }, icon('send', 20));
-    const vi = voiceInput({ ta, hint: 'Em xem lại chữ, sửa nếu cần rồi bấm Gửi nhé.' });
+    const vi = voiceInput({ ta, hint: 'Bạn xem lại chữ, sửa nếu cần rồi bấm Gửi nhé.' });
     let busy = false;
+    const limitNote = h('p', { class: 'banner info chat-limit hidden', role: 'status' }, 'Bạn đã dùng hết ' + CHAT_LIMIT + ' lượt hỏi trợ lý ở bước này. Bạn hãy tự ghi lại điều bạn nghĩ vào ô câu hỏi, hoặc nói chuyện với thầy cô hay người lớn bạn tin tưởng nhé.');
+    const syncLimit = () => {
+      const full = chatUsed() >= CHAT_LIMIT;
+      limitNote.classList.toggle('hidden', !full);
+      ta.disabled = full; sendBtn.disabled = full || busy; vi.btn.disabled = full;
+      ta.placeholder = full ? 'Đã hết lượt hỏi trợ lý' : 'Bạn muốn nói gì với mình?';
+    };
     ta.addEventListener('input', fit);
 
     const scroll = () => { log.scrollTop = log.scrollHeight; };
@@ -723,7 +731,7 @@ export function render(root, params) {
       const me = m.role === 'user';
       const listen = !me && voice.supportsTTS ? h('button', { type: 'button', class: 'msg-listen', 'aria-label': 'Nghe câu trả lời này' }, icon('volume', 14), h('span', null, 'Nghe')) : null;
       if (listen) listen.addEventListener('click', () => { voice.stopListening(true); voice.speak(m.text, (s) => { vi.setSpeaking(s === 'speaking'); if (s === 'novoice') noViVoice(); }); });
-      const nodes = [h('div', { class: `msg ${me ? 'me' : 'ai'}` }, h('span', { class: 'who' }, me ? 'Em' : 'Trợ lý'), m.text, listen)];
+      const nodes = [h('div', { class: `msg ${me ? 'me' : 'ai'}` }, h('span', { class: 'who' }, me ? 'Bạn' : 'Trợ lý'), m.text, listen)];
       const level = me ? (m.risk ? 'concern' : null) : m.risk === 'danger' ? 'danger' : m.risk === 'concern' ? 'concern' : null;
       if (level) nodes.push(safetyCard(level));
       return nodes;
@@ -747,7 +755,7 @@ export function render(root, params) {
       try {
         const res = await askAI({ step: n, task: 'chat', context: buildContext(), messages: chatMessages() });
         typing.remove();
-        const text = String(res.reply || '').trim() || 'Mình chưa nghĩ ra câu trả lời, em nói lại giúp mình nhé.';
+        const text = String(res.reply || '').trim() || 'Mình chưa nghĩ ra câu trả lời, bạn nói lại giúp mình nhé.';
         const m = { role: 'ai', text, risk: res.risk || 'none' };
         store.addMessage(id, n, m);
         log.append(...bubble(m));
@@ -758,14 +766,14 @@ export function render(root, params) {
         log.appendChild(err);
       } finally {
         busy = false;
-        sendBtn.disabled = false;
+        sendBtn.disabled = chatUsed() >= CHAT_LIMIT;
         scroll();
       }
     }
 
     function send() {
       const text = ta.value.trim();
-      if (!text || busy) return;
+      if (!text || busy || chatUsed() >= CHAT_LIMIT) return;
       voice.stopListening(true);
       const viaVoice = vi.used;
       vi.used = false;
@@ -781,6 +789,7 @@ export function render(root, params) {
       refreshMeta();
       log.append(...bubble(m));
       scroll();
+      syncLimit();
       requestReply(viaVoice);
     }
 
@@ -792,13 +801,14 @@ export function render(root, params) {
 
     const el = h('div', { class: 'chat' },
       log,
+      limitNote,
       vi.strip,
       h('div', { class: 'composer' }, ta, vi.btn, sendBtn),
-      h('p', { class: 'chat-note' }, 'Trợ lý là AI nên có thể nhầm. Em đừng ghi họ tên, số điện thoại hay địa chỉ nhé.'));
+      h('p', { class: 'chat-note' }, 'Trợ lý là AI nên có thể nhầm. Bạn đừng ghi họ tên, số điện thoại hay địa chỉ nhé. Mỗi vấn đề có tối đa ' + CHAT_LIMIT + ' lượt hỏi.'));
     drawLog();
     return {
       el, vi,
-      afterOpen: () => { drawLog(); setTimeout(scroll, 30); },
+      afterOpen: () => { drawLog(); syncLimit(); setTimeout(scroll, 30); },
       afterClose: () => { if (refs.problem && n === 1) refs.problem.value = P().data.problem; if (n === 1) goPage(sub); }
     };
   }
@@ -814,7 +824,7 @@ export function render(root, params) {
   function noViVoice() {
     if (warnedNoVoice) return;
     warnedNoVoice = true;
-    toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Em mở bằng Microsoft Edge hoặc thêm giọng Tiếng Việt cho máy; cách làm có trong mục Hướng dẫn sử dụng (Nghe AI đọc).', 'info', 9000);
+    toast('Máy này chưa có giọng đọc tiếng Việt nên mình không đọc to (tránh đọc bằng giọng tiếng Anh). Bạn mở bằng Microsoft Edge hoặc thêm giọng Tiếng Việt cho máy; cách làm có trong mục Hướng dẫn sử dụng (Nghe AI đọc).', 'info', 9000);
   }
   function readTools(pg) {
     const lb = h('button', { type: 'button', class: 'btn btn-small listen-btn', 'aria-label': 'Nghe đọc nội dung' }, icon('volume', 16), h('span', { class: 'lt' }, 'Nghe'));
@@ -857,7 +867,7 @@ export function render(root, params) {
   }
 
   goPage(0);
-  // AI tự chạy khi em vào bước cần (chỉ khi chưa có nội dung)
+  // AI tự chạy khi bạn vào bước cần (chỉ khi chưa có nội dung)
   if (n === 3 && !P().data.solutions.length) fetchSuggest();
   if (n === 4) fetchAnalysis(false);
   if (n === 5 && !P().data.plan.length && P().data.chosenId) fetchPlan(false);

@@ -178,6 +178,11 @@ tests/              Kiểm thử + báo cáo
 - Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
 - Trang "Giới thiệu" có mục "Cơ sở tham khảo".
 
+### v34
+- Bổ sung 4 tài liệu tham khảo (phòng ngừa bắt nạt học đường; giáo trình Kỹ năng giải quyết vấn đề, ra quyết định; kỹ năng ứng phó stress; phòng chống bạo lực gia đình) vào lời nhắc của Thỏ (lib/prompt.js) và mục "Cơ sở tham khảo" trong Hướng dẫn.
+- Apps Script: tự đổi tên trang tính `VanDe` cũ (khác cột) thành `VanDe_cu_<ngày giờ>` và tạo trang mới, tránh lỗi không xem được thống kê. Cần dán lại Code.gs và triển khai phiên bản mới.
+- /api/admin báo rõ hơn khi Apps Script trả lời sai định dạng.
+
 ### v33
 - Đổi nhân vật đồng hành từ chú cú sang **chú thỏ** (js/art.js); lời chào đọc "với Thỏ nhé" (assets/greeting.mp3 làm lại); mã QR tự lấy địa chỉ thật (thothongthai.vercel.app) khi mở trên web.
 - v32: báo đúng lỗi hết lượt (429) thay vì 404; không gọi lặp khi hết lượt.

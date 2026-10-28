@@ -94,7 +94,11 @@ export function renderGuide(root) {
           h('li', null, 'Bộ Quy tắc ứng xử về bảo vệ trẻ em trên môi trường mạng.'),
           h('li', null, 'Tài liệu Kỹ năng giải quyết vấn đề và ra quyết định (quy trình 6 bước).'),
           h('li', null, 'Chương trình giáo dục phổ thông - Chương trình tổng thể (TT 32/2018/TT-BGDĐT).'),
-          h('li', null, 'UNESCO (2024), AI Competency Framework for Students.'))
+          h('li', null, 'UNESCO (2024), AI Competency Framework for Students.'),
+          h('li', null, 'Tài liệu dành cho giáo viên: lồng ghép nội dung phòng chống bạo lực trên cơ sở giới tại trường học, chuyên đề “Phòng ngừa bắt nạt học đường” (Dự án Trường học An toàn, Thân thiện và Bình đẳng).'),
+          h('li', null, 'Giáo trình Kỹ năng giải quyết vấn đề và ra quyết định (ĐH Công nghiệp Thực phẩm TP.HCM, 2018): phân loại 3 loại vấn đề và cách giải quyết.'),
+          h('li', null, 'Nguyễn Thị Thanh Dung (2026), Lý luận về kỹ năng ứng phó với stress trong hoạt động học tập của học sinh, Tạp chí Tâm lý - Giáo dục.'),
+          h('li', null, 'Tài liệu tập huấn phòng chống bạo lực gia đình dành cho giảng viên ngành hành pháp và tư pháp Việt Nam (UNODC, 2011).'))
       ),
       h('section', { class: 'card', id: 'guide-ai' },
         h('h2', null, 'Nội dung do AI tạo ra / hỗ trợ'),

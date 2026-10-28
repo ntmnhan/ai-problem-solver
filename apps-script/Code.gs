@@ -24,7 +24,18 @@ function safe_(v) {
 
 function caseSheet_() {
   var ss = SpreadsheetApp.getActive();
-  var sh = ss.getSheetByName(CASE_SHEET) || ss.insertSheet(CASE_SHEET);
+  var sh = ss.getSheetByName(CASE_SHEET);
+  // Trang tính cũ (phiên bản trước, còn cột họ tên/lớp/trường) không khớp cột mới: đổi tên để giữ dữ liệu cũ, tạo trang mới.
+  if (sh && sh.getLastRow() > 0) {
+    var head = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+    var same = head.length >= CASE_COLS.length;
+    for (var i = 0; same && i < CASE_COLS.length; i++) if (String(head[i]) !== CASE_COLS[i]) same = false;
+    if (!same) {
+      sh.setName(CASE_SHEET + '_cu_' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd_HHmmss'));
+      sh = null;
+    }
+  }
+  if (!sh) sh = ss.insertSheet(CASE_SHEET);
   if (sh.getLastRow() === 0) { sh.appendRow(CASE_COLS); sh.setFrozenRows(1); }
   return sh;
 }

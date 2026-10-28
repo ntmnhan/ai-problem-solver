@@ -66,6 +66,10 @@ module.exports = async function handler(req, res) {
     if (r && r.ok) return json(res, 200, Object.assign({ role }, r));
     return json(res, 502, { error: 'script_failed', message: 'Kho dữ liệu chưa trả lời đúng. Hãy kiểm tra Apps Script đã cập nhật mã mới và triển khai lại chưa.' });
   } catch (e) {
-    return json(res, 502, { error: 'script_failed', message: 'Không kết nối được kho dữ liệu (Apps Script). Thử lại sau nhé.' });
+    console.error('Apps Script lỗi:', e && e.message);
+    const bad = e && /Unexpected token|JSON|script_http_(401|403|404)/.test(String(e.message));
+    return json(res, 502, { error: 'script_failed', message: bad
+      ? 'Kho dữ liệu trả lời không đúng. Thầy cô kiểm tra Apps Script đã dán mã mới (Code.gs), triển khai phiên bản mới và để quyền truy cập “Bất kỳ ai” chưa.'
+      : 'Không kết nối được kho dữ liệu (Apps Script). Thử lại sau nhé.' });
   }
 };

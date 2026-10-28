@@ -196,6 +196,13 @@ export function markShared(id, info) {
   saveNow();
 }
 
+export function markLogged(id) {
+  const p = getProblem(id);
+  if (!p) return;
+  p.logged = Date.now();
+  saveNow();
+}
+
 export function deleteProblem(id) {
   const s = get();
   s.problems = s.problems.filter((p) => p.id !== id);

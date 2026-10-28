@@ -56,7 +56,7 @@ export function openProfileModal(onSaved) {
     title: 'Mã của bạn',
     body: h('div', null,
       h('p', { style: 'font-size:1.4rem;font-weight:800;margin:4px 0' }, prof.code || '(chưa có)'),
-      h('p', { class: 'muted small' }, 'App không hỏi họ tên, lớp hay trường của bạn. Đây là mã ngẫu nhiên, chỉ lưu trên thiết bị này. Nếu bạn chọn gửi vấn đề cho thầy cô thì thầy cô chỉ thấy mã này.')),
+      h('p', { class: 'muted small' }, 'App không hỏi họ tên, lớp khi bạn dùng. Đây là mã ngẫu nhiên, lưu trên thiết bị này và dùng để thống kê ẩn danh. Chỉ khi bạn chọn nhờ thầy cô đồng hành và điền họ tên, lớp thì thầy cô hướng dẫn mới biết bạn là ai.')),
     actions: [{ label: 'Đóng', kind: 'primary', onClick: () => { if (onSaved) onSaved(); } }]
   });
 }

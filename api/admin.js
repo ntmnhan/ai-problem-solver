@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const { callScript, json } = require('../lib/script');
 const { STATUSES, clip } = require('../lib/share');
-const { summarize } = require('../lib/adminSummary');
+const { summarize, isSharedCase } = require('../lib/adminSummary');
 
 const fails = new Map();
 function locked(ip) {
@@ -48,7 +48,12 @@ module.exports = async function handler(req, res) {
       return json(res, 200, { ok: true, role });
     } else if (b.action === 'list') {
       r = await callScript('POST', { action: 'adminList' });
-      if (r && r.ok && role === 'student') return json(res, 200, { ok: true, role, summary: summarize(r.items) }); // học sinh KHÔNG nhận nội dung các ca
+      if (r && r.ok) {
+        const summary = summarize(r.items); // thống kê tính trên MỌI lượt tư vấn (ẩn danh)
+        if (role === 'student') return json(res, 200, { ok: true, role, summary }); // học sinh KHÔNG nhận nội dung, mã hay họ tên
+        // Thầy cô: danh sách chỉ gồm các ca học sinh đã chủ động gửi (kèm họ tên, lớp) + thống kê chung
+        return json(res, 200, { ok: true, role, summary, items: r.items.filter(isSharedCase) });
+      }
     } else if (role !== 'teacher') {
       return json(res, 403, { error: 'forbidden', message: 'Chỉ thầy cô mới xem nội dung và xử lý các ca.' });
     } else if (b.action === 'update') {
@@ -62,7 +67,6 @@ module.exports = async function handler(req, res) {
     } else {
       return json(res, 400, { error: 'bad_request' });
     }
-    if (r && Array.isArray(r.items)) r.items = r.items.map((it) => { const o = Object.assign({}, it); delete o.name; delete o.cls; delete o.school; return o; }); // không bao giờ trả họ tên/lớp/trường
     if (r && r.ok) return json(res, 200, Object.assign({ role }, r));
     return json(res, 502, { error: 'script_failed', message: 'Kho dữ liệu chưa trả lời đúng. Hãy kiểm tra Apps Script đã cập nhật mã mới và triển khai lại chưa.' });
   } catch (e) {

@@ -8,14 +8,14 @@
  * Lưu:
  *  - tổng số lượt truy cập (một con số),
  *  - đánh giá sao và góp ý do học sinh tự viết (trang tính "GopY"),
- *  - các vấn đề mà học sinh TỰ CHỌN gửi cho thầy cô ở bước cuối (trang tính "VanDe", chỉ kèm MÃ ẨN DANH ngẫu nhiên, không có họ tên/lớp/trường).
+ *  - các vấn đề mà học sinh TỰ CHỌN gửi cho thầy cô ở bước cuối (trang tính "VanDe").
  * Không bao giờ lưu hội thoại với AI. Sau khi sửa mã: Triển khai > Quản lý bản triển khai > Chỉnh sửa > Phiên bản mới.
  */
 
 var SHEET_NAME = 'GopY';
 var CASE_SHEET = 'VanDe';
-var CASE_COLS = ['Mã vấn đề', 'Gửi lúc', 'Cập nhật', 'Mã học sinh', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Nguyên nhân', 'Kết quả mong muốn', 'Biện pháp bạn chọn', 'Lý do', 'Kế hoạch thực hiện', 'Hài lòng', 'Điểm', 'Nhận xét', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý'];
-var KEYS = ['id', 'sentAt', 'updatedAt', 'code', 'category', 'title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'happy', 'satisfaction', 'final', 'stepsDone', 'risk', 'status', 'note'];
+var CASE_COLS = ['Mã vấn đề', 'Gửi lúc', 'Cập nhật', 'Mã học sinh', 'Nhóm', 'Tiêu đề', 'Vấn đề', 'Nguyên nhân', 'Kết quả mong muốn', 'Biện pháp bạn chọn', 'Lý do', 'Kế hoạch thực hiện', 'Hài lòng', 'Điểm', 'Nhận xét', 'Số bước xong', 'Rủi ro', 'Trạng thái', 'Ghi chú xử lý', 'Họ tên', 'Lớp', 'Gửi thầy cô'];
+var KEYS = ['id', 'sentAt', 'updatedAt', 'code', 'category', 'title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'happy', 'satisfaction', 'final', 'stepsDone', 'risk', 'status', 'note', 'name', 'cls', 'shared'];
 
 function safe_(v) {
   v = String(v == null ? '' : v);
@@ -25,14 +25,19 @@ function safe_(v) {
 function caseSheet_() {
   var ss = SpreadsheetApp.getActive();
   var sh = ss.getSheetByName(CASE_SHEET);
-  // Trang tính cũ (phiên bản trước, còn cột họ tên/lớp/trường) không khớp cột mới: đổi tên để giữ dữ liệu cũ, tạo trang mới.
+  // Trang tính phiên bản rất cũ (không khớp cột): đổi tên để giữ dữ liệu, tạo trang mới.
+  // Trang tính phiên bản trước (thiếu 3 cột cuối: Họ tên, Lớp, Gửi thầy cô): tự thêm cột, giữ nguyên dữ liệu.
   if (sh && sh.getLastRow() > 0) {
     var head = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
-    var same = head.length >= CASE_COLS.length;
-    for (var i = 0; same && i < CASE_COLS.length; i++) if (String(head[i]) !== CASE_COLS[i]) same = false;
+    var base = CASE_COLS.length - 3;
+    var same = head.length >= base;
+    for (var i = 0; same && i < base; i++) if (String(head[i]) !== CASE_COLS[i]) same = false;
     if (!same) {
       sh.setName(CASE_SHEET + '_cu_' + Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'yyyyMMdd_HHmmss'));
       sh = null;
+    } else if (head.length < CASE_COLS.length) {
+      if (sh.getMaxColumns() < CASE_COLS.length) sh.insertColumnsAfter(sh.getMaxColumns(), CASE_COLS.length - sh.getMaxColumns());
+      sh.getRange(1, base + 1, 1, 3).setValues([CASE_COLS.slice(base)]);
     }
   }
   if (!sh) sh = ss.insertSheet(CASE_SHEET);
@@ -116,12 +121,18 @@ function doPost(e) {
       var row = findRow_(sh, String(r.id));
       var now = new Date();
       var prev = row ? sh.getRange(row, 1, 1, KEYS.length).getValues()[0] : null;
+      var isStat = r.mode === 'stat';
+      var prevShared = prev && (String(prev[KEYS.indexOf('shared')]) === 'Có' || String(prev[KEYS.indexOf('problem')]) !== ''); // dòng cũ có nội dung cũng coi là đã gửi
+      var STAT_ONLY = ['updatedAt', 'happy', 'satisfaction', 'stepsDone', 'risk'];
       var vals = KEYS.map(function (k, i) {
         if (k === 'sentAt') return prev ? prev[i] : now;
         if (k === 'updatedAt') return now;
         if (k === 'status') return prev && prev[i] ? prev[i] : 'Mới';
         if (k === 'note') return prev ? prev[i] : '';
+        // Ghi thống kê (ẩn danh) không được ghi đè nội dung/họ tên của ca đã gửi thầy cô
+        if (isStat && prevShared && STAT_ONLY.indexOf(k) < 0) return prev[i];
         if (k === 'satisfaction' || k === 'stepsDone') return Number(r[k]) || 0;
+        if (k === 'shared') return isStat ? (prevShared ? 'Có' : '') : 'Có';
         return safe_(r[k]);
       });
       if (row) sh.getRange(row, 1, 1, vals.length).setValues([vals]); else sh.appendRow(vals);

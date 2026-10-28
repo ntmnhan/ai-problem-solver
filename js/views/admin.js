@@ -18,7 +18,7 @@ function csvCell(v) {
 }
 
 export function exportCsv(items) {
-  const cols = [['sentAt', 'Gửi lúc'], ['code', 'Mã học sinh'], ['category', 'Nhóm'], ['title', 'Tiêu đề'], ['problem', 'Vấn đề'], ['cause', 'Nguyên nhân'], ['goal', 'Kết quả mong muốn'], ['chosen', 'Biện pháp chọn'], ['plan', 'Kế hoạch'], ['happy', 'Hài lòng'], ['satisfaction', 'Điểm'], ['final', 'Nhận xét'], ['risk', 'Rủi ro'], ['status', 'Trạng thái'], ['note', 'Ghi chú xử lý']];
+  const cols = [['sentAt', 'Gửi lúc'], ['name', 'Họ tên'], ['cls', 'Lớp'], ['code', 'Mã học sinh'], ['category', 'Nhóm'], ['title', 'Tiêu đề'], ['problem', 'Vấn đề'], ['cause', 'Nguyên nhân'], ['goal', 'Kết quả mong muốn'], ['chosen', 'Biện pháp chọn'], ['plan', 'Kế hoạch'], ['happy', 'Hài lòng'], ['satisfaction', 'Điểm'], ['final', 'Nhận xét'], ['risk', 'Rủi ro'], ['status', 'Trạng thái'], ['note', 'Ghi chú xử lý']];
   const lines = [cols.map((c) => csvCell(c[1])).join(',')];
   items.forEach((it) => lines.push(cols.map(([k]) => csvCell(k === 'sentAt' ? fmt(it[k]) : k === 'risk' ? (it[k] === 'concern' ? 'Cần chú ý' : '') : it[k])).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -80,7 +80,7 @@ export function render(root) {
     if (f.risk && (it.risk === 'concern' ? 'yes' : 'no') !== f.risk) return false;
     if (f.status && it.status !== f.status) return false;
     if (f.q) {
-      const hay = [it.code, it.title, it.problem, it.final, it.note].join(' ').toLowerCase();
+      const hay = [it.name, it.cls, it.code, it.title, it.problem, it.final, it.note].join(' ').toLowerCase();
       if (!hay.includes(f.q.toLowerCase())) return false;
     }
     return true;
@@ -101,17 +101,17 @@ export function render(root) {
     listEl = h('div', { class: 'ad-list' });
     host.append(
       h('div', { class: 'row between ad-head' },
-        h('h2', { style: 'margin:0' }, 'Vấn đề học sinh đã gửi'),
+        h('h2', { style: 'margin:0' }, 'Thống kê và các ca học sinh gửi thầy cô'),
         h('div', { class: 'row' },
           btn('Tải CSV (mở bằng Excel)', { small: true, icon: 'download', onClick: () => exportCsv(filtered()) }),
           btn('Làm mới', { small: true, icon: 'refresh', onClick: load }),
           btn('Thoát', { small: true, onClick: () => { pass = ''; savePass(''); items = []; loginView(); } }))),
       h('div', { class: 'admin-note', id: 'ad-explain' },
-        h('b', null, 'Vì sao số ca ở đây ít hơn số học sinh đã dùng? '),
-        'Mỗi dòng là một vấn đề mà học sinh TỰ NGUYỆN gửi: các bạn phải làm đến trang cuối của Bước 6, tick “Bạn đồng ý gửi” rồi bấm Gửi. Những trường hợp KHÔNG có trong danh sách: bạn chỉ dùng thử hoặc dừng giữa chừng; bạn không tick đồng ý hoặc chọn “Xong bước này” mà không gửi; bạn gửi nhưng mất mạng hoặc gặp lỗi (app có báo lỗi để bạn thử lại); bạn dùng trình duyệt ẩn danh hoặc xóa dữ liệu trước khi gửi. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca (được cập nhật). “Lượt truy cập” ở chân trang chỉ đếm lượt mở website, không phải số ca.'),
+        h('b', null, 'Thống kê và danh sách khác nhau thế nào? '),
+        'Thống kê bên dưới tính MỌI lượt tư vấn đã hoàn thành Bước 6 (ẩn danh, không có nội dung). Danh sách các ca chỉ gồm những bạn TỰ NGUYỆN nhờ thầy cô đồng hành: bạn điền họ tên, lớp, tick đồng ý và bấm “Gửi cho thầy cô”. Chỉ thầy cô có mật khẩu này thấy họ tên, lớp và nội dung. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
       statsEl,
       h('div', { class: 'ad-filters' },
-        h('input', { type: 'search', class: 'input', placeholder: 'Tìm theo mã, nội dung…', 'aria-label': 'Tìm kiếm', onInput: (e) => { f.q = e.target.value; drawList(); } }),
+        h('input', { type: 'search', class: 'input', placeholder: 'Tìm theo tên, lớp, mã, nội dung…', 'aria-label': 'Tìm kiếm', onInput: (e) => { f.q = e.target.value; drawList(); } }),
         select('Mọi nhóm', 'cat', CATEGORIES.map((c) => [c, c])),
         select('Mọi mức rủi ro', 'risk', [['yes', 'Cần chú ý'], ['no', 'Bình thường']]),
         select('Mọi trạng thái', 'status', STATUSES.map((c) => [c, c]))),
@@ -119,10 +119,9 @@ export function render(root) {
     drawList();
   }
 
-  // Quyền HỌC SINH: chỉ có số liệu tổng hợp do máy chủ tính; không có mã, tiêu đề hay nội dung của ca nào
-  function studentView() {
-    clear(host);
-    const s = summary || { total: 0, byStatus: {}, byCategory: {}, steps: [], satisfaction: {}, happy: {}, last14: [] };
+  // Khối thống kê tổng hợp (chung cho học sinh và thầy cô): chỉ số liệu, không mã/họ tên/nội dung
+  function statsBlock(s) {
+    s = s || { total: 0, shared: 0, byStatus: {}, byCategory: {}, steps: [], satisfaction: {}, happy: {}, last14: [] };
     const chip = (n, t, cls) => h('div', { class: 'ad-chip ' + (cls || '') }, h('b', null, String(n)), h('span', null, t));
     const bars = (label, rows, color) => {
       const max = Math.max(1, ...rows.map((r) => r[1]));
@@ -131,6 +130,21 @@ export function render(root) {
     };
     const stepsRows = (s.steps || []).map((n, i) => [i === 6 ? 'Xong 6/6 bước' : `Xong ${i}/6 bước`, n]);
     const dayRows = (s.last14 || []).map((d) => [d.d.slice(8, 10) + '/' + d.d.slice(5, 7), d.n]);
+    return h('div', { id: 'ad-stats-block' },
+      h('div', { class: 'ad-stats', id: 'ad-student-stats' },
+        chip(s.total || 0, 'Tổng lượt tư vấn'), chip(s.shared || 0, 'Gửi thầy cô'), chip((s.byStatus || {})['Mới'] || 0, 'Mới', 'new'), chip((s.byStatus || {})['Đang hỗ trợ'] || 0, 'Đang hỗ trợ'), chip((s.byStatus || {})['Đã xong'] || 0, 'Đã xong', 'ok'),
+        chip(s.concernOpen || 0, 'Cần thầy cô chú ý', s.concernOpen ? 'risk' : ''),
+        chip(s.satisfaction && s.satisfaction.avg != null ? s.satisfaction.avg + '/5' : '–', 'Điểm hài lòng trung bình'),
+        chip(((s.happy || {}).yes || 0) + ' / ' + ((s.happy || {}).no || 0), 'Hài lòng / Chưa hài lòng')),
+      h('h3', null, 'Số lượt theo nhóm vấn đề'), bars('Số lượt theo nhóm', Object.entries(s.byCategory || {}), (t) => CAT_COLOR[t] || '#64748b'),
+      h('h3', null, 'Các bạn đã làm đến đâu'), bars('Tiến độ', stepsRows, () => '#3b82f6'),
+      h('h3', null, 'Số lượt trong 14 ngày gần đây'), bars('Theo ngày', dayRows, () => '#10b981'));
+  }
+
+  // Quyền HỌC SINH: chỉ có số liệu tổng hợp do máy chủ tính; không có mã, tiêu đề hay nội dung của ca nào
+  function studentView() {
+    clear(host);
+    const s = summary || { total: 0, byStatus: {}, byCategory: {}, steps: [], satisfaction: {}, happy: {}, last14: [] };
     host.append(
       h('div', { class: 'row between ad-head' },
         h('h2', { style: 'margin:0' }, 'Thống kê (quyền học sinh)'),
@@ -138,33 +152,16 @@ export function render(root) {
           btn('Làm mới', { small: true, icon: 'refresh', onClick: load }),
           btn('Thoát', { small: true, onClick: () => { pass = ''; savePass(''); summary = null; loginView(); } }))),
       h('div', { class: 'banner info', id: 'ad-student-note' }, icon('shield', 20),
-        h('div', null, 'Bạn đang xem thống kê tổng hợp. Nội dung các ca chỉ thầy cô xem và xử lý được. Nếu thấy có ca cần thầy cô chú ý, hãy báo thầy cô tư vấn, không tìm hiểu hay bàn tán.')),
+        h('div', null, 'Bạn đang xem thống kê tổng hợp. Họ tên, lớp và nội dung các ca chỉ thầy cô hướng dẫn xem và xử lý được. Nếu thấy có ca cần thầy cô chú ý, hãy báo thầy cô tư vấn, không tìm hiểu hay bàn tán.')),
       h('div', { class: 'admin-note', id: 'ad-explain' },
-        h('b', null, 'Vì sao số ca ở đây ít hơn số bạn đã dùng? '),
-        'Mỗi ca là một vấn đề mà bạn TỰ NGUYỆN gửi ở trang cuối của Bước 6. Bạn dùng thử, dừng giữa chừng, không tick đồng ý hoặc gặp lỗi mạng thì không được tính. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website, không phải số ca.'),
-      h('div', { class: 'ad-stats', id: 'ad-student-stats' },
-        chip(s.total || 0, 'Tổng số ca'), chip((s.byStatus || {})['Mới'] || 0, 'Mới', 'new'), chip((s.byStatus || {})['Đang hỗ trợ'] || 0, 'Đang hỗ trợ'), chip((s.byStatus || {})['Đã xong'] || 0, 'Đã xong', 'ok'),
-        chip(s.concernOpen || 0, 'Cần thầy cô chú ý', s.concernOpen ? 'risk' : ''),
-        chip(s.satisfaction && s.satisfaction.avg != null ? s.satisfaction.avg + '/5' : '–', 'Điểm hài lòng trung bình'),
-        chip(((s.happy || {}).yes || 0) + ' / ' + ((s.happy || {}).no || 0), 'Hài lòng / Chưa hài lòng')),
-      h('h3', null, 'Số ca theo nhóm vấn đề'), bars('Số ca theo nhóm', Object.entries(s.byCategory || {}), (t) => CAT_COLOR[t] || '#64748b'),
-      h('h3', null, 'Các bạn đã làm đến đâu'), bars('Tiến độ', stepsRows, () => '#3b82f6'),
-      h('h3', null, 'Số ca gửi trong 14 ngày gần đây'), bars('Theo ngày', dayRows, () => '#10b981'));
+        h('b', null, 'Số liệu này tính thế nào? '),
+        'Mỗi lượt tư vấn được ghi nhận ẩn danh khi một bạn hoàn thành Bước 6 (không có tên, lớp hay nội dung). “Gửi thầy cô” là số bạn tự nguyện nhờ thầy cô đồng hành. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
+      statsBlock(s));
   }
 
   function drawStats() {
     clear(statsEl);
-    const total = items.length;
-    const by = (s) => items.filter((i) => i.status === s).length;
-    const risk = items.filter((i) => i.risk === 'concern' && i.status !== 'Đã xong').length;
-    const chip = (n, t, cls) => h('div', { class: 'ad-chip ' + (cls || '') }, h('b', null, String(n)), h('span', null, t));
-    statsEl.append(chip(total, 'Tổng số'), chip(by('Mới'), 'Mới', 'new'), chip(by('Đang hỗ trợ'), 'Đang hỗ trợ'), chip(by('Đã xong'), 'Đã xong', 'ok'), chip(risk, 'Cần chú ý', risk ? 'risk' : ''));
-    const max = Math.max(1, ...CATEGORIES.map((c) => items.filter((i) => i.category === c).length));
-    statsEl.appendChild(h('div', { class: 'ad-bars', 'aria-label': 'Số ca theo nhóm vấn đề' },
-      CATEGORIES.map((c) => {
-        const n = items.filter((i) => i.category === c).length;
-        return h('div', { class: 'ad-bar' }, h('span', { class: 'lbl' }, c), h('span', { class: 'track' }, h('span', { class: 'fill', style: `width:${(n / max) * 100}%;background:${CAT_COLOR[c]}` })), h('b', null, String(n)));
-      })));
+    statsEl.appendChild(statsBlock(summary));
   }
 
   function drawList() {
@@ -172,12 +169,12 @@ export function render(root) {
     clear(listEl);
     const rows = filtered();
     if (!rows.length) {
-      listEl.appendChild(h('div', { class: 'card empty' }, h('p', null, items.length ? 'Không có vấn đề nào khớp bộ lọc.' : 'Chưa có học sinh nào gửi vấn đề.')));
+      listEl.appendChild(h('div', { class: 'card empty' }, h('p', null, items.length ? 'Không có vấn đề nào khớp bộ lọc.' : 'Chưa có bạn nào nhờ thầy cô đồng hành.')));
       return;
     }
     rows.forEach((it) => {
       listEl.appendChild(h('button', { type: 'button', class: `ad-row ${it.risk === 'concern' ? 'risk' : ''}`, onClick: () => openCase(it) },
-        h('span', { class: 'who' }, h('b', null, it.code || 'Ẩn danh')),
+        h('span', { class: 'who' }, h('b', null, [it.name, it.cls].filter(Boolean).join(' · ') || it.code || 'Ẩn danh'), it.name && it.code ? h('span', { class: 'muted small' }, ' ' + it.code) : null),
         h('span', { class: 'ttl' }, it.title || it.problem),
         h('span', { class: 'meta' },
           h('span', { class: 'tag', style: `--c:${CAT_COLOR[it.category] || '#64748b'}` }, it.category || 'Khác'),
@@ -194,7 +191,7 @@ export function render(root) {
     const line = (label, v) => (v ? h('div', { class: 'ad-field' }, h('b', null, label), h('p', null, v)) : null);
     const body = h('div', { class: 'ad-detail' },
       it.risk === 'concern' ? h('div', { class: 'banner warn' }, icon('alert', 18), h('div', null, 'Nội dung có dấu hiệu cần quan tâm. Hãy báo ngay cho thầy cô tư vấn; các bạn không tự xử lý và không kể lại cho người khác.')) : null,
-      h('p', { class: 'muted small' }, (it.code || 'Ẩn danh') + ' · gửi ' + fmt(it.sentAt) + ' · đã làm ' + (it.stepsDone || 0) + '/6 bước'),
+      h('p', { class: 'muted small' }, [it.name, it.cls].filter(Boolean).join(' · ') + (it.name ? ' · ' : '') + (it.code || 'Ẩn danh') + ' · gửi ' + fmt(it.sentAt) + ' · đã làm ' + (it.stepsDone || 0) + '/6 bước'),
       line('Vấn đề', it.problem), line('Nguyên nhân bạn nghĩ', it.cause), line('Kết quả bạn mong muốn', it.goal),
       line('Biện pháp bạn chọn', it.chosen), line('Lý do chọn', it.reason), line('Kế hoạch thực hiện', it.plan),
       line('Bạn có hài lòng không?', it.happy), it.satisfaction ? line('Điểm bạn cho', it.satisfaction + '/5') : null,

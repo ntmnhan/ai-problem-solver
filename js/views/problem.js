@@ -183,6 +183,7 @@ export function render(root, params) {
     });
     if (!ok) return;
     store.completeStep(id, n);
+    if (n === 6) logStat(); // ghi nhận lượt tư vấn ẩn danh (không chờ kết quả)
     toast(`Bạn đã hoàn thành Bước ${n}.`, 'ok');
     location.hash = n < 6 ? `#/problem/${id}/${n + 1}` : `#/result/${id}`;
   }
@@ -553,20 +554,45 @@ export function render(root, params) {
           return h('div', { class: 'col grow' }, satEl);
         }
       },
-      { q: 'Bạn có muốn nhờ thầy cô đồng hành thêm không?', hint: 'Không bắt buộc. Chỉ gửi khi bạn tin tưởng và đồng ý.', mood: 'wave', render: shareCard }
+      { q: 'Cảm ơn bạn đã hoàn thành!', hint: 'Thỏ chúc bạn luôn vui, khỏe và học thật tốt nhé!', mood: 'cheer', qclass: 'long', render: thanksCard }
     ];
   }
 
-  // ---------- Trang cuối: gửi cho thầy cô (tùy chọn, cần bạn tick đồng ý) ----------
-  function shareCard() {
-    const prof = store.getProfile() || {};
+  // Nội dung ca (dùng khi học sinh chủ động gửi thầy cô) và bản ghi thống kê ẩn danh (không dùng nội dung để lưu, chỉ để máy chủ tính mức rủi ro)
+  function casePayload() {
+    const d = P().data;
+    const ch = d.solutions.find((x) => x.id === d.chosenId);
+    return {
+      id, code: (store.getProfile() || {}).code || '',
+      category: d.category, title: P().title,
+      problem: d.problem, cause: d.cause, goal: d.goal,
+      chosen: ch ? ch.text : '', reason: d.reason,
+      plan: d.plan.filter((t) => t.text.trim()).map((t, i) => `${i + 1}. ${t.text}${t.time ? ' (' + t.time + ')' : ''}${t.detail ? ': ' + t.detail : ''}${t.backup ? ' (Nếu chưa được: ' + t.backup + ')' : ''}`).join('\n'),
+      happy: d.happy, final: d.final,
+      satisfaction: d.satisfaction, stepsDone: 6
+    };
+  }
+
+  // Ghi nhận lượt tư vấn ẩn danh khi xong Bước 6 (không có nội dung, họ tên, lớp). Lỗi mạng thì im lặng, thử lại một lần.
+  async function logStat() {
+    const body = Object.assign(casePayload(), { mode: 'stat' });
+    for (let k = 0; k < 2; k++) {
+      try { await shareProblem(body); store.markLogged(id); return; } catch (e) { await new Promise((ok) => setTimeout(ok, 2500)); }
+    }
+  }
+
+  // ---------- Trang cuối: cảm ơn + (tùy chọn) nhờ thầy cô đồng hành, cần điền họ tên, lớp và tick đồng ý ----------
+  function thanksCard() {
     const last = P().shared || {};
+    const nameIn = h('input', { type: 'text', class: 'input', id: 'sh-name', maxlength: 60, placeholder: 'Họ và tên', 'aria-label': 'Họ và tên', autocomplete: 'off' });
+    const clsIn = h('input', { type: 'text', class: 'input', id: 'sh-cls', maxlength: 12, placeholder: 'Lớp (ví dụ 7/3)', 'aria-label': 'Lớp', autocomplete: 'off' });
     const chk = h('input', { type: 'checkbox', id: 'sh-ok', checked: false });
     const status = h('div', { class: 'share-status', role: 'status' });
     const sendB = btn(last.at ? 'Gửi lại bản cập nhật' : 'Gửi cho thầy cô', { kind: 'primary', icon: 'send', onClick: send });
     sendB.id = 'sh-send';
+    const ready = () => { sendB.disabled = !(chk.checked && nameIn.value.trim() && clsIn.value.trim()); };
     sendB.disabled = true;
-    chk.addEventListener('change', () => { sendB.disabled = !chk.checked; });
+    [chk, nameIn, clsIn].forEach((el) => el.addEventListener(el === chk ? 'change' : 'input', ready));
     const paint = () => {
       clear(status);
       if (P().shared && P().shared.at) {
@@ -574,21 +600,10 @@ export function render(root, params) {
       }
     };
     async function send() {
-      if (!chk.checked) return;
-      const d = P().data;
-      const ch = d.solutions.find((x) => x.id === d.chosenId);
+      if (sendB.disabled) return;
       sendB.disabled = true;
       try {
-        const r = await shareProblem({
-          consent: true, id,
-          code: prof.code || '',
-          category: d.category, title: P().title,
-          problem: d.problem, cause: d.cause, goal: d.goal,
-          chosen: ch ? ch.text : '', reason: d.reason,
-          plan: d.plan.filter((t) => t.text.trim()).map((t, i) => `${i + 1}. ${t.text}${t.time ? ' (' + t.time + ')' : ''}${t.detail ? ': ' + t.detail : ''}${t.backup ? ' (Nếu chưa được: ' + t.backup + ')' : ''}`).join('\n'),
-          happy: d.happy, final: d.final,
-          satisfaction: d.satisfaction, stepsDone: store.stepsDone(P())
-        });
+        const r = await shareProblem(Object.assign(casePayload(), { consent: true, name: nameIn.value.trim(), cls: clsIn.value.trim() }));
         store.markShared(id, { at: (r && r.at) || Date.now() });
         toast('Đã gửi cho thầy cô.', 'ok');
         paint();
@@ -596,16 +611,19 @@ export function render(root, params) {
       } catch (e) {
         toast(e.message || 'Chưa gửi được. Bạn thử lại nhé.', 'error', 5000);
       } finally {
-        sendB.disabled = !chk.checked;
+        ready();
       }
     }
     paint();
     return h('div', { class: 'col grow share-card' },
-      h('p', { class: 'muted small share-note' }, `Chỉ thầy cô tư vấn của trường xem được nội dung bạn gửi, kèm mã ẩn danh (${prof.code || ''}); không có họ tên, lớp hay trường. Nhóm học sinh quản trị chỉ thấy thống kê chung.`),
+      h('p', { class: 'thanks-msg' }, 'Cảm ơn bạn đã dành thời gian suy nghĩ và tìm cách giải quyết vấn đề của mình. Bạn đã làm rất tốt! Bấm “Xong bước này” để hoàn thành nhé.'),
+      h('div', { class: 'fld-cap' }, 'Bạn muốn thầy cô đồng hành thêm? (không bắt buộc)'),
+      h('p', { class: 'muted small share-note' }, 'Nếu muốn, bạn điền họ tên và lớp để thầy cô tư vấn biết bạn là ai và liên hệ hỗ trợ. Họ tên, lớp và nội dung vấn đề chỉ thầy cô hướng dẫn có mật khẩu xem được; nhóm học sinh quản trị chỉ thấy số liệu thống kê. Nếu không muốn, bạn cứ bỏ qua phần này.'),
+      nameIn, clsIn,
       h('label', { class: 'check share-ok' }, chk,
-        h('span', null, 'Bạn đồng ý gửi vấn đề này (không gồm trò chuyện với AI) cho thầy cô để được hỗ trợ.')),
+        h('span', null, 'Bạn đồng ý gửi vấn đề này (không gồm trò chuyện với AI), cùng họ tên và lớp, cho thầy cô để được hỗ trợ.')),
       sendB, status,
-      h('p', { class: 'muted small share-note' }, 'Bạn kiểm tra nội dung, đừng để lộ họ tên, số điện thoại, địa chỉ của bạn hay người khác. Nếu không muốn gửi, bạn bấm “Xong bước này” là được.'));
+      h('p', { class: 'muted small share-note' }, 'Bạn đừng ghi số điện thoại, địa chỉ nhà hay thông tin riêng tư của người khác vào nội dung nhé.'));
   }
 
   // ---------- AI tự chạy ở các bước 3, 4, 5 (không cần bạn bấm) ----------

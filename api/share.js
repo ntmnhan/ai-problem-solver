@@ -1,5 +1,7 @@
 'use strict';
-// POST /api/share — học sinh tự chọn gửi vấn đề cho thầy cô (đã tick đồng ý).
+// POST /api/share
+//  - {mode:'stat'}: ghi lượt tư vấn ẩn danh khi học sinh xong Bước 6 (không có nội dung, họ tên, lớp).
+//  - mặc định: học sinh tự chọn gửi vấn đề kèm họ tên, lớp cho thầy cô (phải tick đồng ý).
 const { callScript, json } = require('../lib/script');
 const { buildRecord } = require('../lib/share');
 
@@ -25,9 +27,9 @@ module.exports = async function handler(req, res) {
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = null; } }
   if (!b || typeof b !== 'object') return json(res, 400, { error: 'bad_request' });
-  if (b.consent !== true) return json(res, 400, { error: 'no_consent', message: 'Bạn cần tick đồng ý trước khi gửi.' });
+  if (b.mode !== 'stat' && b.consent !== true) return json(res, 400, { error: 'no_consent', message: 'Bạn cần tick đồng ý trước khi gửi.' });
   const rec = buildRecord(b);
-  if (!rec) return json(res, 400, { error: 'bad_record', message: 'Chưa có nội dung vấn đề để gửi.' });
+  if (!rec) return json(res, 400, { error: 'bad_record', message: b.mode === 'stat' ? 'Thiếu mã.' : 'Bạn hãy điền họ tên, lớp và có nội dung vấn đề để gửi.' });
   try {
     const r = await callScript('POST', { action: 'share', record: rec });
     if (r && r.ok) return json(res, 200, { ok: true, at: Date.now() });

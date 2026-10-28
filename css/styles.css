@@ -762,3 +762,7 @@ body.wiz main { overflow: visible; }
 .bubble.long .qs { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .qh { display: block; }
 .wz-actions { position: sticky; bottom: 0; z-index: 5; background: var(--bg, #f3f7ff); padding: 6px 0 4px; }
+
+/* v35: trang cảm ơn cuối Bước 6 */
+.thanks-msg { margin: 0; font-size: 1.05rem; line-height: 1.55; font-weight: 600; }
+.share-card .input { width: 100%; }

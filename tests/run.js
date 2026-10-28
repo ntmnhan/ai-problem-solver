@@ -285,28 +285,44 @@ function gemini(obj, extra = {}) {
     assert(!res.body.includes('SECRET-KEY'));
   });
 
-  await t('C-01', '/api/share: cần đồng ý, ghi bản ghi đã chuẩn hóa, tự tính rủi ro, giữ nguyên tên trường', async () => {
+  await t('C-01', '/api/share: gửi thầy cô cần đồng ý + họ tên + lớp, lưu họ tên/lớp/nội dung, tự tính rủi ro; chế độ thống kê ẩn danh không cần đồng ý và KHÔNG lưu nội dung/họ tên/lớp', async () => {
     process.env.APPS_SCRIPT_URL = 'https://script.example/x';
     process.env.APPS_SCRIPT_TOKEN = 'tok';
     const share = require('../api/share');
     const sent = [];
     global.fetch = async (url, init) => { sent.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true }) }; };
     let res = mockRes();
-    await share(mockReq({ id: 'pb_abc123', problem: 'x' }), res);
+    await share(mockReq({ id: 'pb_abc123', problem: 'x', name: 'A', cls: '6/6' }), res);
     assert.strictEqual(res.statusCode, 400);
     assert.strictEqual(res.json.error, 'no_consent');
     res = mockRes();
-    await share(mockReq({ consent: true, id: 'pb_abc123', name: 'A', cls: '6/6', school: 'THCS', code: 'hs-ab2cd', category: 'Bậy', problem: 'Bạn bị bạo lực ở nhà', satisfaction: 9 }), res);
+    await share(mockReq({ consent: true, id: 'pb_abc123', problem: 'x' }), res);
+    assert.strictEqual(res.statusCode, 400, 'thiếu họ tên/lớp thì không gửi');
+    res = mockRes();
+    await share(mockReq({ consent: true, id: 'pb_abc123', name: 'Nguyễn Văn A', cls: '6/6', code: 'hs-ab2cd', category: 'Bậy', problem: 'Bạn bị bạo lực ở nhà', satisfaction: 9 }), res);
     assert.strictEqual(res.statusCode, 200);
-    const rec = sent[0].record;
+    let rec = sent[0].record;
     assert.strictEqual(sent[0].action, 'share');
     assert.strictEqual(rec.risk, 'concern');
     assert.strictEqual(rec.code, 'HS-AB2CD');
-    assert.ok(!('name' in rec) && !('cls' in rec) && !('school' in rec), 'không lưu họ tên/lớp/trường');
+    assert.strictEqual(rec.name, 'Nguyễn Văn A'); assert.strictEqual(rec.cls, '6/6'); assert.strictEqual(rec.shared, 'Có');
     assert.strictEqual(rec.category, 'Khác');
     assert.strictEqual(rec.satisfaction, 5);
+    // thống kê ẩn danh
+    sent.length = 0;
     res = mockRes();
-    await share(mockReq({ consent: true, id: '../x', problem: 'a' }), res);
+    await share(mockReq({ mode: 'stat', id: 'pb_abc123', code: 'HS-AB2CD', name: 'Lén', cls: '9/9', category: 'Học tập', title: 'T', problem: 'Bạn bị bạo lực ở nhà', cause: 'c', happy: 'yes', satisfaction: 4, stepsDone: 6 }), res);
+    assert.strictEqual(res.statusCode, 200);
+    rec = sent[0].record;
+    assert.strictEqual(rec.mode, 'stat');
+    assert.strictEqual(rec.risk, 'concern', 'rủi ro vẫn được tính từ nội dung');
+    ['title', 'problem', 'cause', 'goal', 'chosen', 'reason', 'plan', 'final', 'name', 'cls'].forEach((k) => assert.strictEqual(rec[k], '', 'không được lưu ' + k));
+    assert.strictEqual(rec.happy, 'Hài lòng'); assert.strictEqual(rec.stepsDone, 6); assert.strictEqual(rec.shared, '');
+    res = mockRes();
+    await share(mockReq({ mode: 'stat', id: 'pb_abc123' }), res);
+    assert.strictEqual(res.statusCode, 400, 'thống kê cần mã');
+    res = mockRes();
+    await share(mockReq({ consent: true, id: '../x', problem: 'a', name: 'A', cls: '6' }), res);
     assert.strictEqual(res.statusCode, 400);
   });
 
@@ -314,7 +330,7 @@ function gemini(obj, extra = {}) {
     const share = require('../api/share');
     global.fetch = async () => { throw new Error('down'); };
     const res = mockRes();
-    await share(mockReq({ consent: true, id: 'pb_abc123', problem: 'a' }), res);
+    await share(mockReq({ consent: true, id: 'pb_abc123', problem: 'a', name: 'A', cls: '6/1' }), res);
     assert.strictEqual(res.statusCode, 502);
   });
 
@@ -325,12 +341,15 @@ function gemini(obj, extra = {}) {
     assert.strictEqual((await call('x', { action: 'list' })).statusCode, 503);
     process.env.ADMIN_PASSWORD = 'matkhau';
     const bodies = [];
-    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: [{ id: 'pb_abc123', code: 'HS-AB2CD', name: 'Tên cũ', cls: '6/1', school: 'X', problem: 'p' }] }) }; };
+    global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: [{ id: 'pb_abc123', code: 'HS-AB2CD', name: 'Tên HS', cls: '6/1', shared: 'Có', problem: 'p' }, { id: 'pb_stat1', code: 'HS-ZZZZZ', shared: '', problem: '' }] }) }; };
     assert.strictEqual((await call('sai', { action: 'list' }, '9.9.9.1')).statusCode, 401);
     assert.strictEqual(bodies.length, 0);
     const lr = await call('matkhau', { action: 'list' }, '9.9.9.2');
     assert.strictEqual(lr.statusCode, 200);
-    assert.deepStrictEqual(Object.keys(lr.json.items[0]).sort(), ['code', 'id', 'problem'], 'admin không bao giờ nhận họ tên/lớp/trường');
+    assert.strictEqual(lr.json.items.length, 1, 'danh sách chỉ gồm ca học sinh đã gửi thầy cô');
+    assert.strictEqual(lr.json.items[0].name, 'Tên HS', 'thầy cô thấy họ tên');
+    assert.strictEqual(lr.json.summary.total, 2, 'thống kê tính mọi lượt tư vấn');
+    assert.strictEqual(lr.json.summary.shared, 1);
     assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Đang hỗ trợ', note: 'ok' }, '9.9.9.2')).statusCode, 200);
     assert.strictEqual(bodies[1].action, 'adminUpdate');
     assert.strictEqual((await call('matkhau', { action: 'update', id: 'pb_abc123', status: 'Lạ' }, '9.9.9.2')).statusCode, 400);
@@ -344,7 +363,7 @@ function gemini(obj, extra = {}) {
     const admin = require('../api/admin');
     const call = async (pw, body, ip) => { const r = mockReq(body); r.headers['x-admin-password'] = pw; r.headers['x-forwarded-for'] = ip; const res = mockRes(); await admin(r, res); return res; };
     process.env.ADMIN_PASSWORD = 'thayco'; delete process.env.STUDENT_PASSWORD;
-    const rows = [{ id: 'pb_x1', code: 'HS-AAAAA', title: 'Tiêu đề bí mật', problem: 'Nội dung bí mật', category: 'Học tập', status: 'Mới', risk: 'concern', stepsDone: 6, satisfaction: 4, happy: 'Hài lòng', sentAt: Date.now() }];
+    const rows = [{ id: 'pb_x1', code: 'HS-AAAAA', title: 'Tiêu đề bí mật', problem: 'Nội dung bí mật', category: 'Học tập', status: 'Mới', risk: 'concern', stepsDone: 6, satisfaction: 4, happy: 'Hài lòng', shared: 'Có', name: 'Họ Tên Bí Mật', cls: '9/9', sentAt: Date.now() }, { id: 'pb_x2', code: 'HS-BBBBB', category: 'Tình bạn', status: 'Mới', risk: 'none', stepsDone: 6, satisfaction: 5, happy: 'Hài lòng', shared: '', problem: '', sentAt: Date.now() }];
     const bodies = [];
     global.fetch = async (url, init) => { bodies.push(JSON.parse(init.body)); return { ok: true, status: 200, json: async () => ({ ok: true, items: rows }) }; };
     assert.strictEqual((await call('hs', { action: 'list' }, '8.8.8.1')).statusCode, 401, 'chưa đặt STUDENT_PASSWORD thì không vào được');
@@ -356,8 +375,9 @@ function gemini(obj, extra = {}) {
     assert.strictEqual(lr.json.role, 'student');
     assert.ok(!('items' in lr.json), 'học sinh không nhận danh sách ca');
     const dump = JSON.stringify(lr.json);
-    ['Tiêu đề bí mật', 'Nội dung bí mật', 'HS-AAAAA', 'pb_x1'].forEach((x) => assert.ok(!dump.includes(x), 'rò rỉ: ' + x));
-    assert.strictEqual(lr.json.summary.total, 1);
+    ['Tiêu đề bí mật', 'Nội dung bí mật', 'HS-AAAAA', 'pb_x1', 'Họ Tên Bí Mật', '9/9'].forEach((x) => assert.ok(!dump.includes(x), 'rò rỉ: ' + x));
+    assert.strictEqual(lr.json.summary.total, 2);
+    assert.strictEqual(lr.json.summary.shared, 1);
     assert.strictEqual(lr.json.summary.concernOpen, 1);
     assert.strictEqual(lr.json.summary.byCategory['Học tập'], 1);
     const n0 = bodies.length;
@@ -366,7 +386,9 @@ function gemini(obj, extra = {}) {
     assert.strictEqual(bodies.length, n0, 'không được gọi kho dữ liệu khi bị từ chối');
     const tl = await call('thayco', { action: 'list' }, '8.8.8.2');
     assert.strictEqual(tl.json.role, 'teacher');
+    assert.strictEqual(tl.json.items.length, 1);
     assert.strictEqual(tl.json.items[0].problem, 'Nội dung bí mật');
+    assert.strictEqual(tl.json.items[0].name, 'Họ Tên Bí Mật');
     delete process.env.ADMIN_PASSWORD; delete process.env.STUDENT_PASSWORD;
   });
 

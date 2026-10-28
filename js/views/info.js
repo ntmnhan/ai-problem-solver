@@ -72,7 +72,8 @@ export function renderGuide(root) {
       h('section', { class: 'card' },
         h('h2', null, 'Gửi thầy cô, đếm lượt và góp ý'),
         h('ul', null,
-          h('li', null, h('strong', null, 'Gửi vấn đề cho thầy cô là tùy chọn:'), ' chỉ khi bạn tick đồng ý và bấm “Gửi cho thầy cô” thì nội dung (vấn đề, mục tiêu, cách chọn, kết quả) kèm một mã ngẫu nhiên mới được gửi. App không hỏi và không gửi họ tên, lớp, trường; không gửi cuộc trò chuyện với AI. Nội dung chỉ thầy cô có mật khẩu quản trị xem được; nhóm học sinh quản trị chỉ xem thống kê tổng hợp. Ca đáng lo được chuyển cho thầy cô tư vấn. Bạn có thể nhờ xóa.'),
+          h('li', null, h('strong', null, 'Thống kê ẩn danh:'), ' khi bạn hoàn thành Bước 6, app ghi lại một lượt tư vấn gồm mã ngẫu nhiên, nhóm vấn đề, số bước đã làm, mức hài lòng và điểm. Không ghi họ tên, lớp hay nội dung vấn đề. Nhóm học sinh quản trị chỉ thấy các số liệu tổng hợp này.'),
+          h('li', null, h('strong', null, 'Nhờ thầy cô đồng hành là tùy chọn:'), ' chỉ khi bạn điền họ tên, lớp, tick đồng ý và bấm “Gửi cho thầy cô” thì họ tên, lớp và nội dung (vấn đề, mục tiêu, cách chọn, kết quả) mới được gửi; không gửi cuộc trò chuyện với AI. Chỉ thầy cô hướng dẫn có mật khẩu xem được. Ca đáng lo được chuyển cho thầy cô tư vấn. Bạn có thể nhờ xóa.'),
           h('li', null, h('strong', null, 'Số ca thầy cô nhận'), ' chỉ gồm các vấn đề bạn chủ động gửi, nên luôn ít hơn số bạn đã dùng.'),
           h('li', null, h('strong', null, 'Lượt truy cập'), ' là số lần mở website (cách nhau ít nhất 30 phút trên cùng máy), không phải số người; không lưu tên hay nội dung.'),
           h('li', null, 'Đánh giá, góp ý (số sao, lời nhắn, không kèm tên) được lưu để cải thiện website.'))

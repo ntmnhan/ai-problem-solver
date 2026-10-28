@@ -178,6 +178,12 @@ tests/              Kiểm thử + báo cáo
 - Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
 - Trang "Giới thiệu" có mục "Cơ sở tham khảo".
 
+### v35
+- Xong Bước 6 (bấm "Xong bước này") thì app tự ghi một lượt tư vấn ẩn danh vào Google Sheet (mã, nhóm, số bước, hài lòng, điểm, mức rủi ro); KHÔNG có nút Gửi, KHÔNG lưu nội dung, họ tên, lớp. Máy chủ chỉ dùng nội dung để tính mức rủi ro rồi bỏ đi.
+- Trang cuối Bước 6: Thỏ cảm ơn và chúc; tùy chọn nhờ thầy cô đồng hành: điền họ tên, lớp, tick đồng ý, bấm "Gửi cho thầy cô". Chỉ ca này mới lưu họ tên, lớp và nội dung.
+- Phân quyền: mật khẩu học sinh chỉ thấy thống kê (mọi lượt tư vấn); mật khẩu thầy cô thấy thống kê + danh sách các ca đã gửi (họ tên, lớp, nội dung), đổi trạng thái, xuất CSV.
+- Apps Script: tự thêm 3 cột cuối (Họ tên, Lớp, Gửi thầy cô) vào trang `VanDe`, giữ dữ liệu. Phải dán lại Code.gs và triển khai phiên bản mới.
+
 ### v34
 - Bổ sung 4 tài liệu tham khảo (phòng ngừa bắt nạt học đường; giáo trình Kỹ năng giải quyết vấn đề, ra quyết định; kỹ năng ứng phó stress; phòng chống bạo lực gia đình) vào lời nhắc của Thỏ (lib/prompt.js) và mục "Cơ sở tham khảo" trong Hướng dẫn.
 - Apps Script: tự đổi tên trang tính `VanDe` cũ (khác cột) thành `VanDe_cu_<ngày giờ>` và tạo trang mới, tránh lỗi không xem được thống kê. Cần dán lại Code.gs và triển khai phiên bản mới.

@@ -153,6 +153,29 @@ function doPost(e) {
           items.push(o);
         });
       }
+      // Gộp cả dữ liệu từ các trang tính cũ "VanDe_cu_..." (do bản trước đổi tên) để thống kê đủ cũ và mới; trùng Mã vấn đề thì chỉ tính một
+      var seen = {};
+      items.forEach(function (o) { seen[String(o.id)] = true; });
+      SpreadsheetApp.getActive().getSheets().forEach(function (old) {
+        if (old.getName().indexOf(CASE_SHEET + '_cu_') !== 0 || old.getLastRow() < 2) return;
+        var data = old.getDataRange().getValues();
+        var idx = {};
+        data[0].forEach(function (t, i) { idx[String(t)] = i; });
+        for (var r = 1; r < data.length; r++) {
+          var o2 = {};
+          KEYS.forEach(function (k, i) {
+            var c = idx[CASE_COLS[i]];
+            var v = c === undefined ? '' : data[r][c];
+            o2[k] = v instanceof Date ? v.getTime() : v;
+          });
+          if (!o2.id) o2.id = old.getName() + '_' + r;
+          if (seen[String(o2.id)]) continue;
+          seen[String(o2.id)] = true;
+          o2.shared = String(o2.problem || '') ? 'Có' : '';
+          if (!o2.status) o2.status = 'Mới';
+          items.push(o2);
+        }
+      });
       items.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
       return json_({ ok: true, items: items.slice(0, 1000) });
     }
@@ -176,4 +199,37 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Chạy MỘT LẦN từ trình soạn thảo Apps Script (chọn hàm khoiPhucDuLieuCu rồi bấm Run) để đưa dữ liệu
+ * từ các trang tính cũ "VanDe_cu_..." (do bản trước đổi tên) về trang "VanDe" hiện tại.
+ * Ghép cột theo TÊN tiêu đề; dòng nào đã có (trùng Mã vấn đề) thì bỏ qua. Dòng có nội dung được tính là "Gửi thầy cô".
+ */
+function khoiPhucDuLieuCu() {
+  var ss = SpreadsheetApp.getActive();
+  var cur = caseSheet_();
+  var have = {};
+  var n0 = cur.getLastRow() - 1;
+  if (n0 > 0) cur.getRange(2, 1, n0, 1).getValues().forEach(function (r) { have[String(r[0])] = true; });
+  var added = 0;
+  ss.getSheets().forEach(function (old) {
+    if (old.getName().indexOf(CASE_SHEET + '_cu_') !== 0 || old.getLastRow() < 2) return;
+    var data = old.getDataRange().getValues();
+    var idx = {};
+    data[0].forEach(function (t, i) { idx[String(t)] = i; });
+    for (var r = 1; r < data.length; r++) {
+      var id = String(data[r][idx['Mã vấn đề']] || '');
+      if (!id || have[id]) continue;
+      var vals = KEYS.map(function (k, i) {
+        var c = idx[CASE_COLS[i]];
+        return c === undefined ? '' : data[r][c];
+      });
+      vals[KEYS.indexOf('shared')] = String(vals[KEYS.indexOf('problem')]) ? 'Có' : '';
+      cur.appendRow(vals);
+      have[id] = true; added++;
+    }
+  });
+  Logger.log('Đã khôi phục ' + added + ' dòng.');
+  return added;
 }

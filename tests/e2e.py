@@ -119,12 +119,12 @@ def install_routes(ctx, chat_mode='ok', stats=None):
             return route.fulfill(status=401, content_type='application/json', body=json.dumps({'error': 'unauthorized', 'message': 'Mật khẩu chưa đúng.'}))
         role = 'teacher' if pw == 'matkhau' else 'student'
         if d['action'] == 'list' and role == 'student':
-            summ = {'total': len(ADMIN_DB), 'shared': len([x for x in ADMIN_DB if x.get('shared') == 'Có']), 'byStatus': {'Mới': len(ADMIN_DB), 'Đang hỗ trợ': 0, 'Đã xong': 0}, 'byCategory': {'Học tập': len(ADMIN_DB)}, 'concernOpen': 0, 'steps': [0, 0, 0, 0, 0, 0, len(ADMIN_DB)], 'satisfaction': {'avg': 4, 'count': 1}, 'happy': {'yes': 1, 'no': 0}, 'last14': [{'d': '2026-10-27', 'n': len(ADMIN_DB)}]}
+            summ = {'total': len(ADMIN_DB), 'shared': len([x for x in ADMIN_DB if x.get('shared') == 'Có']), 'byStatus': {'Mới': len(ADMIN_DB), 'Đang hỗ trợ': 0, 'Đã xong': 0}, 'byCategory': {'Học tập': len(ADMIN_DB)}, 'concernOpen': 0, 'steps': [0, 0, 0, 0, 0, 0, len(ADMIN_DB)], 'satisfaction': {'avg': 4, 'count': 1}, 'happy': {'yes': 1, 'no': 0}, 'daily': [{'d': '2026-10-26', 'n': 0}, {'d': '2026-10-27', 'n': len(ADMIN_DB)}], 'window': {'from': '2026-10-22', 'to': '2026-10-28', 'days': 7, 'limited': False}}
             return route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'role': 'student', 'summary': summ}))
         if role == 'student' and d['action'] in ('update', 'delete'):
             return route.fulfill(status=403, content_type='application/json', body=json.dumps({'error': 'forbidden', 'message': 'Chỉ thầy cô mới xem nội dung và xử lý các ca.'}))
         if d['action'] == 'list':
-            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'role': 'teacher', 'summary': {'total': len(ADMIN_DB), 'shared': len([x for x in ADMIN_DB if x.get('shared') == 'Có']), 'byStatus': {'Mới': 0, 'Đang hỗ trợ': 0, 'Đã xong': 0}, 'byCategory': {'Học tập': len(ADMIN_DB)}, 'concernOpen': 0, 'steps': [0, 0, 0, 0, 0, 0, len(ADMIN_DB)], 'satisfaction': {'avg': None, 'count': 0}, 'happy': {'yes': 0, 'no': 0}, 'last14': []}, 'items': [x for x in ADMIN_DB if x.get('shared') == 'Có']}))
+            return route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'role': 'teacher', 'summary': {'total': len(ADMIN_DB), 'shared': len([x for x in ADMIN_DB if x.get('shared') == 'Có']), 'byStatus': {'Mới': 0, 'Đang hỗ trợ': 0, 'Đã xong': 0}, 'byCategory': {'Học tập': len(ADMIN_DB)}, 'concernOpen': 0, 'steps': [0, 0, 0, 0, 0, 0, len(ADMIN_DB)], 'satisfaction': {'avg': None, 'count': 0}, 'happy': {'yes': 0, 'no': 0}, 'daily': [], 'window': {'from': '2026-10-22', 'to': '2026-10-28', 'days': 7, 'limited': False}}, 'items': [x for x in ADMIN_DB if x.get('shared') == 'Có']}))
         for it in list(ADMIN_DB):
             if it['id'] == d.get('id'):
                 if d['action'] == 'update':
@@ -781,6 +781,7 @@ def run():
             expect(page.get_by_text('Thống kê và các ca học sinh gửi thầy cô')).to_be_visible()
             expect(page.locator('#ad-explain')).to_contain_text('TỰ NGUYỆN')
             expect(page.locator('#ad-student-stats')).to_be_visible()
+            expect(page.locator('#ad-window')).to_contain_text('toàn bộ')
             expect(page.locator('.ad-row .who').first).to_contain_text('Nguyễn Văn An')
             expect(page.locator('.ad-row .who').first).to_contain_text('7/3')
             page.locator('.ad-row').first.click()

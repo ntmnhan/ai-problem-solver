@@ -108,7 +108,7 @@ export function render(root) {
           btn('Thoát', { small: true, onClick: () => { pass = ''; savePass(''); items = []; loginView(); } }))),
       h('div', { class: 'admin-note', id: 'ad-explain' },
         h('b', null, 'Thống kê và danh sách khác nhau thế nào? '),
-        'Thống kê bên dưới tính MỌI lượt tư vấn đã hoàn thành Bước 6 (ẩn danh, không có nội dung). Danh sách các ca chỉ gồm những bạn TỰ NGUYỆN nhờ thầy cô đồng hành: bạn điền họ tên, lớp, tick đồng ý và bấm “Gửi cho thầy cô”. Chỉ thầy cô có mật khẩu này thấy họ tên, lớp và nội dung. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
+        'Thống kê bên dưới tính MỌI lượt tư vấn đã hoàn thành Bước 6 (toàn bộ dữ liệu cũ và mới) (ẩn danh, không có nội dung). Danh sách các ca chỉ gồm những bạn TỰ NGUYỆN nhờ thầy cô đồng hành: bạn điền họ tên, lớp, tick đồng ý và bấm “Gửi cho thầy cô”. Chỉ thầy cô có mật khẩu này thấy họ tên, lớp và nội dung. Một vấn đề gửi lại nhiều lần chỉ tính 1 ca. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
       statsEl,
       h('div', { class: 'ad-filters' },
         h('input', { type: 'search', class: 'input', placeholder: 'Tìm theo tên, lớp, mã, nội dung…', 'aria-label': 'Tìm kiếm', onInput: (e) => { f.q = e.target.value; drawList(); } }),
@@ -129,8 +129,11 @@ export function render(root) {
         rows.map(([t, n]) => h('div', { class: 'ad-bar' }, h('span', { class: 'lbl' }, t), h('span', { class: 'track' }, h('span', { class: 'fill', style: `width:${(n / max) * 100}%;background:${color(t)}` })), h('b', null, String(n)))));
     };
     const stepsRows = (s.steps || []).map((n, i) => [i === 6 ? 'Xong 6/6 bước' : `Xong ${i}/6 bước`, n]);
-    const dayRows = (s.last14 || []).map((d) => [d.d.slice(8, 10) + '/' + d.d.slice(5, 7), d.n]);
+    const dayRows = (s.daily || s.last14 || []).map((d) => [d.d.slice(8, 10) + '/' + d.d.slice(5, 7), d.n]);
+    const w = s.window;
+    const dm = (d) => d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4);
     return h('div', { id: 'ad-stats-block' },
+      w ? h('p', { class: 'muted', id: 'ad-window' }, w.limited ? `Số liệu ${w.days} ngày: từ ${dm(w.from)} đến ${dm(w.to)}.` : `Số liệu toàn bộ (dữ liệu cũ và mới). Biểu đồ theo ngày: ${w.days} ngày gần nhất (${dm(w.from)} đến ${dm(w.to)}).`) : null,
       h('div', { class: 'ad-stats', id: 'ad-student-stats' },
         chip(s.total || 0, 'Tổng lượt tư vấn'), chip(s.shared || 0, 'Gửi thầy cô'), chip((s.byStatus || {})['Mới'] || 0, 'Mới', 'new'), chip((s.byStatus || {})['Đang hỗ trợ'] || 0, 'Đang hỗ trợ'), chip((s.byStatus || {})['Đã xong'] || 0, 'Đã xong', 'ok'),
         chip(s.concernOpen || 0, 'Cần thầy cô chú ý', s.concernOpen ? 'risk' : ''),
@@ -138,7 +141,7 @@ export function render(root) {
         chip(((s.happy || {}).yes || 0) + ' / ' + ((s.happy || {}).no || 0), 'Hài lòng / Chưa hài lòng')),
       h('h3', null, 'Số lượt theo nhóm vấn đề'), bars('Số lượt theo nhóm', Object.entries(s.byCategory || {}), (t) => CAT_COLOR[t] || '#64748b'),
       h('h3', null, 'Các bạn đã làm đến đâu'), bars('Tiến độ', stepsRows, () => '#3b82f6'),
-      h('h3', null, 'Số lượt trong 14 ngày gần đây'), bars('Theo ngày', dayRows, () => '#10b981'));
+      h('h3', null, 'Số lượt theo ngày'), bars('Theo ngày', dayRows, () => '#10b981'));
   }
 
   // Quyền HỌC SINH: chỉ có số liệu tổng hợp do máy chủ tính; không có mã, tiêu đề hay nội dung của ca nào

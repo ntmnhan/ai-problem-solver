@@ -178,6 +178,14 @@ tests/              Kiểm thử + báo cáo
 - Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
 - Trang "Giới thiệu" có mục "Cơ sở tham khảo".
 
+### v37
+- Thống kê Admin gộp TOÀN BỘ dữ liệu cũ (các tab `VanDe_cu_...`, đọc trực tiếp) và mới, không lọc ngày; biểu đồ theo ngày hiện 7 ngày gần nhất. Muốn giới hạn khoảng ngày thì đặt biến Vercel `STATS_FROM` (vd 2026-10-26) và `STATS_DAYS`.
+- Ca cũ muốn sửa trạng thái/ghi chú thì chạy hàm `khoiPhucDuLieuCu()` một lần để đưa về tab `VanDe`.
+
+### v36
+- Thống kê Admin chỉ tính 7 ngày bắt đầu từ 26/10/2026 (đổi bằng biến Vercel `STATS_FROM` dạng 2026-10-26, `STATS_DAYS`); hiển thị khoảng ngày và biểu đồ theo từng ngày.
+- Code.gs: thêm hàm `khoiPhucDuLieuCu()` (chạy một lần trong Apps Script) đưa dữ liệu từ trang `VanDe_cu_...` về trang `VanDe`.
+
 ### v35
 - Xong Bước 6 (bấm "Xong bước này") thì app tự ghi một lượt tư vấn ẩn danh vào Google Sheet (mã, nhóm, số bước, hài lòng, điểm, mức rủi ro); KHÔNG có nút Gửi, KHÔNG lưu nội dung, họ tên, lớp. Máy chủ chỉ dùng nội dung để tính mức rủi ro rồi bỏ đi.
 - Trang cuối Bước 6: Thỏ cảm ơn và chúc; tùy chọn nhờ thầy cô đồng hành: điền họ tên, lớp, tick đồng ý, bấm "Gửi cho thầy cô". Chỉ ca này mới lưu họ tên, lớp và nội dung.

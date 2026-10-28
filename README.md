@@ -178,6 +178,9 @@ tests/              Kiểm thử + báo cáo
 - Lời nhắc hệ thống của trợ lý (`lib/prompt.js`) đưa vào 4 tài liệu: Bộ Quy tắc bảo vệ trẻ em trên môi trường mạng, Kỹ năng giải quyết vấn đề (6 bước, 5 Tại sao, tiêu chí lựa chọn, kế hoạch + dự phòng), Chương trình GDPT 2018 (năng lực giải quyết vấn đề và sáng tạo, giao tiếp - hợp tác), UNESCO AI Competency Framework for Students (2024).
 - Trang "Giới thiệu" có mục "Cơ sở tham khảo".
 
+### v38
+- Admin học sinh: bỏ mục "Các bạn đã làm đến đâu". Biểu đồ số lượt theo ngày chỉ hiện 7 ngày bắt đầu từ 27/10/2026 (đổi bằng biến Vercel `CHART_FROM`, `STATS_DAYS`). Các số tổng vẫn gộp dữ liệu cũ và mới.
+
 ### v37
 - Thống kê Admin gộp TOÀN BỘ dữ liệu cũ (các tab `VanDe_cu_...`, đọc trực tiếp) và mới, không lọc ngày; biểu đồ theo ngày hiện 7 ngày gần nhất. Muốn giới hạn khoảng ngày thì đặt biến Vercel `STATS_FROM` (vd 2026-10-26) và `STATS_DAYS`.
 - Ca cũ muốn sửa trạng thái/ghi chú thì chạy hàm `khoiPhucDuLieuCu()` một lần để đưa về tab `VanDe`.

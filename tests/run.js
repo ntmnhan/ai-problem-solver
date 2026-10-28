@@ -381,6 +381,7 @@ function gemini(obj, extra = {}) {
     assert.strictEqual(lr.json.summary.concernOpen, 1);
     assert.strictEqual(lr.json.summary.daily.length, 7);
     assert.strictEqual(lr.json.summary.window.limited, false);
+    assert.deepStrictEqual([lr.json.summary.window.from, lr.json.summary.window.to], ['2026-10-27', '2026-11-02'], 'biểu đồ 7 ngày từ 27/10/2026');
     process.env.STATS_FROM = '2026-10-26';
     const lim = await call('hs', { action: 'list' }, '8.8.8.2');
     delete process.env.STATS_FROM;

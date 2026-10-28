@@ -120,7 +120,8 @@ export function render(root) {
   }
 
   // Khối thống kê tổng hợp (chung cho học sinh và thầy cô): chỉ số liệu, không mã/họ tên/nội dung
-  function statsBlock(s) {
+  function statsBlock(s, opts) {
+    opts = opts || {};
     s = s || { total: 0, shared: 0, byStatus: {}, byCategory: {}, steps: [], satisfaction: {}, happy: {}, last14: [] };
     const chip = (n, t, cls) => h('div', { class: 'ad-chip ' + (cls || '') }, h('b', null, String(n)), h('span', null, t));
     const bars = (label, rows, color) => {
@@ -133,15 +134,15 @@ export function render(root) {
     const w = s.window;
     const dm = (d) => d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4);
     return h('div', { id: 'ad-stats-block' },
-      w ? h('p', { class: 'muted', id: 'ad-window' }, w.limited ? `Số liệu ${w.days} ngày: từ ${dm(w.from)} đến ${dm(w.to)}.` : `Số liệu toàn bộ (dữ liệu cũ và mới). Biểu đồ theo ngày: ${w.days} ngày gần nhất (${dm(w.from)} đến ${dm(w.to)}).`) : null,
+      w ? h('p', { class: 'muted', id: 'ad-window' }, w.limited ? `Số liệu ${w.days} ngày: từ ${dm(w.from)} đến ${dm(w.to)}.` : `Số liệu toàn bộ (dữ liệu cũ và mới). Biểu đồ theo ngày: ${w.days} ngày, từ ${dm(w.from)} đến ${dm(w.to)}.`) : null,
       h('div', { class: 'ad-stats', id: 'ad-student-stats' },
         chip(s.total || 0, 'Tổng lượt tư vấn'), chip(s.shared || 0, 'Gửi thầy cô'), chip((s.byStatus || {})['Mới'] || 0, 'Mới', 'new'), chip((s.byStatus || {})['Đang hỗ trợ'] || 0, 'Đang hỗ trợ'), chip((s.byStatus || {})['Đã xong'] || 0, 'Đã xong', 'ok'),
         chip(s.concernOpen || 0, 'Cần thầy cô chú ý', s.concernOpen ? 'risk' : ''),
         chip(s.satisfaction && s.satisfaction.avg != null ? s.satisfaction.avg + '/5' : '–', 'Điểm hài lòng trung bình'),
         chip(((s.happy || {}).yes || 0) + ' / ' + ((s.happy || {}).no || 0), 'Hài lòng / Chưa hài lòng')),
       h('h3', null, 'Số lượt theo nhóm vấn đề'), bars('Số lượt theo nhóm', Object.entries(s.byCategory || {}), (t) => CAT_COLOR[t] || '#64748b'),
-      h('h3', null, 'Các bạn đã làm đến đâu'), bars('Tiến độ', stepsRows, () => '#3b82f6'),
-      h('h3', null, 'Số lượt theo ngày'), bars('Theo ngày', dayRows, () => '#10b981'));
+      opts.noSteps ? null : h('h3', null, 'Các bạn đã làm đến đâu'), opts.noSteps ? null : bars('Tiến độ', stepsRows, () => '#3b82f6'),
+      h('h3', null, `Số lượt theo ngày${w ? ` (${w.days} ngày từ ${dm(w.from)})` : ''}`), bars('Theo ngày', dayRows, () => '#10b981'));
   }
 
   // Quyền HỌC SINH: chỉ có số liệu tổng hợp do máy chủ tính; không có mã, tiêu đề hay nội dung của ca nào
@@ -159,7 +160,7 @@ export function render(root) {
       h('div', { class: 'admin-note', id: 'ad-explain' },
         h('b', null, 'Số liệu này tính thế nào? '),
         'Mỗi lượt tư vấn được ghi nhận ẩn danh khi một bạn hoàn thành Bước 6 (không có tên, lớp hay nội dung). “Gửi thầy cô” là số bạn tự nguyện nhờ thầy cô đồng hành. “Lượt truy cập” ở chân trang chỉ đếm lượt mở website.'),
-      statsBlock(s));
+      statsBlock(s, { noSteps: true }));
   }
 
   function drawStats() {
